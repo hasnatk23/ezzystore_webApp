@@ -145,3 +145,39 @@ body{
   font-size:12px;
   color:var(--muted);
 }
+
+/* Logo wrapper for better presence */
+.logo-circle {
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .45), transparent 48%),
+    linear-gradient(135deg, var(--orange), var(--orange-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  box-shadow:
+    0 22px 50px rgba(249, 115, 22, .45),
+    inset 0 0 0 3px rgba(255, 255, 255, .35);
+}
+
+/* subtle outer ring */
+.logo-circle::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(249, 115, 22, .18);
+}
+
+/* Logo image */
+.logo-circle img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}

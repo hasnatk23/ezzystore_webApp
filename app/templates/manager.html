@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ezzystore • Manager</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
+</head>
+<body class="manager-body">
+
+<div class="manager-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-circle">
+        <img src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore logo">
+      </div>
+      <div>
+        <p class="eyebrow">Manager</p>
+        <h2>{{ shop.name }}</h2>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-section="overview">
+        <span>Overview</span>
+      </button>
+      <button class="nav-item" data-section="manage">
+        <span>Manage Products</span>
+      </button>
+      <button class="nav-item" data-section="stock">
+        <span>Add Stock</span>
+      </button>
+      <button class="nav-item" data-section="brands">
+        <span>Brands</span>
+      </button>
+      <button class="nav-item" data-section="categories">
+        <span>Categories</span>
+      </button>
+      <button class="nav-item" data-section="inventory">
+        <span>Inventory</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="hero-user">
+        <span class="hero-user-label">Signed in as</span>
+        <span class="hero-user-name">{{ session.username }}</span>
+      </div>
+      <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+  </aside>
+
+  <main class="manager-main">
+
+    <section class="manager-section active" data-fragment="overview">
+      <header class="manager-hero">
+        <div>
+          <p class="eyebrow">Manager Console</p>
+          <h1>{{ shop.name }}</h1>
+          <p>Track products, add inventory, and keep this shop running smoothly.</p>
+        </div>
+      </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alerts">
+          {% for category, msg in messages %}
+            <div class="toast {{ category }}">
+              <div class="toast-ic">{% if category == "success" %}✓{% else %}!{% endif %}</div>
+              <div class="toast-text">{{ msg }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="stat-grid">
+      <article class="card stat-card">
+        <p class="eyebrow">Products</p>
+        <div class="stat">{{ total_products }}</div>
+        <p class="muted">Registered for this shop.</p>
+      </article>
+      <article class="card stat-card good">
+        <p class="eyebrow">Total stock</p>
+        <div class="stat">{{ total_stock }}</div>
+        <p class="muted">Units currently available.</p>
+      </article>
+      <article class="card stat-card warn">
+        <p class="eyebrow">Out of stock</p>
+        <div class="stat">{{ out_of_stock }}</div>
+        <p class="muted">Products needing a restock.</p>
+      </article>
+    </section>
+    </section>
+
+    <section class="manager-section" data-fragment="manage">
+      <div class="section-head manage-head">
+        <div class="manage-head-text">
+          <h2>Manage Products</h2>
+          <p>Browse categories, view products, and add new ones inline.</p>
+        </div>
+        <div class="manage-meta">
+          <span class="meta-label">Total products</span>
+          <span class="meta-value">{{ total_products }}</span>
+        </div>
+      </div>
+
+      {% if categories %}
+        <div class="category-grid">
+          {% for category in categories %}
+            <article class="category-card">
+              <header class="category-card-head">
+                <div>
+                  <h3>{{ category.name }}</h3>
+                  <p>{{ category_counts[category.id] | default(0) }} products</p>
+                </div>
+                <span class="badge">{{ category_counts[category.id] | default(0) }}</span>
+              </header>
+
+              <form method="post" action="{{ url_for('manager.create_product') }}" class="category-add-form">
+                <input type="hidden" name="product_category_id" value="{{ category.id }}">
+                <label>
+                  <span>Product name</span>
+                  <input name="product_name" placeholder="Add product" required>
+                </label>
+                <label>
+                  <span>Brand</span>
+                  <select name="product_brand_id">
+                    <option value="">No brand</option>
+                    {% for brand in brands %}
+                      <option value="{{ brand.id }}">{{ brand.name }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <button class="btn btn-primary btn-mini" type="submit">Add</button>
+              </form>
+
+              <details class="category-details" {% if loop.first %}open{% endif %}>
+                <summary>Products</summary>
+                <div class="category-products">
+                  {% if category_products[category.id] %}
+                    {% for p in category_products[category.id] %}
+                      <div class="product-card" data-name="{{ p.name | lower }}">
+                        <div class="product-index">#{{ loop.index }}</div>
+                        <form method="post" action="{{ url_for('manager.update_product') }}" class="product-edit" id="productEdit-{{ category.id }}-{{ p.id }}">
+                          <input type="hidden" name="edit_product_id" value="{{ p.id }}">
+                          <div class="product-fields">
+                            <label>
+                              <span>Name</span>
+                              <input name="edit_product_name" value="{{ p.name }}" required>
+                            </label>
+                            <label>
+                              <span>Brand</span>
+                              <select name="edit_product_brand_id">
+                                <option value="">No brand</option>
+                                {% for brand in brands %}
+                                  <option value="{{ brand.id }}" {% if p.brand_id == brand.id %}selected{% endif %}>{{ brand.name }}</option>
+                                {% endfor %}
+                              </select>
+                            </label>
+                            <label>
+                              <span>Category</span>
+                              <select name="edit_product_category_id" required>
+                                <option value="">Select category</option>
+                                {% for cat in categories %}
+                                  <option value="{{ cat.id }}" {% if p.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                              </select>
+                            </label>
+                          </div>
+                        </form>
+                        <form method="post" action="{{ url_for('manager.delete_product') }}" class="product-delete" id="productDelete-{{ category.id }}-{{ p.id }}">
+                          <input type="hidden" name="delete_product_id" value="{{ p.id }}">
+                        </form>
+                        <div class="product-actions">
+                          <button class="btn btn-primary btn-mini" form="productEdit-{{ category.id }}-{{ p.id }}" type="submit">Save</button>
+                          <button class="btn btn-soft btn-mini" form="productDelete-{{ category.id }}-{{ p.id }}" type="submit">Delete</button>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="empty mini">
+                      <div class="empty-art">📦</div>
+                      <p>No products in this category yet.</p>
+                    </div>
+                  {% endif %}
+                </div>
+              </details>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">📁</div>
+          <p>Create a category first to start adding products.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="manager-section" data-fragment="stock">
+      <div class="section-head">
+        <h2>Inventory Boost</h2>
+        <p>Quickly increase product quantities.</p>
+      </div>
+
+      <article class="card form-card">
+        <div class="card-head">
+          <div>
+            <h2>Add stock</h2>
+            <p class="muted">Increase quantity for registered products.</p>
+          </div>
+        </div>
+
+        {% if products %}
+          <form method="post" action="{{ url_for('manager.add_stock') }}" class="form-grid">
+            <label>
+              <span>Product</span>
+              <select name="product_id" required>
+                <option value="" disabled selected>Select product</option>
+                {% for p in products %}
+                  <option value="{{ p.id }}">{{ p.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+
+            <label>
+              <span>Quantity</span>
+              <input type="number" min="1" name="stock_quantity" placeholder="e.g., 25" required>
+            </label>
+
+            <label>
+              <span>Unit Price (PKR)</span>
+              <input type="number" step="0.01" min="0" name="stock_price" placeholder="0.00" required>
+            </label>
+
+            <button type="submit" class="btn btn-secondary">
+              <span class="btn-ic">⬆</span>
+              <span>Add Stock</span>
+            </button>
+          </form>
+        {% else %}
+          <div class="empty mini">
+            <div class="empty-art">📦</div>
+            <p>Register a product to add stock.</p>
+          </div>
+        {% endif %}
+      </article>
+    </section>
+
+    <section class="manager-section" data-fragment="brands">
+      <div class="card-head">
+        <div>
+          <h2>Brands</h2>
+          <p class="muted">Maintain brand names used across products.</p>
+        </div>
+      </div>
+
+      <form method="post" action="{{ url_for('manager.create_brand') }}" class="brand-form">
+        <input name="brand_name" placeholder="Add new brand" required>
+        <button class="btn btn-primary" type="submit">
+          <span class="btn-ic">＋</span>
+          <span>Add Brand</span>
+        </button>
+      </form>
+
+      {% if brands %}
+        <div class="table-shell">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Brand</th>
+                <th style="width:180px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for brand in brands %}
+                <tr>
+                  <td>{{ brand.name }}</td>
+                  <td>
+                    <form method="post" action="{{ url_for('manager.update_brand') }}" class="inline-form">
+                      <input type="hidden" name="brand_id" value="{{ brand.id }}">
+                      <input name="brand_new_name" value="{{ brand.name }}" required>
+                      <button class="btn btn-secondary btn-mini" type="submit">Rename</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">🏷</div>
+          <p>No brands added yet.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="manager-section" data-fragment="categories">
+      <div class="card-head">
+        <div>
+          <h2>Categories</h2>
+          <p class="muted">Organize products into categories.</p>
+        </div>
+      </div>
+
+      <form method="post" action="{{ url_for('manager.create_category') }}" class="brand-form">
+        <input name="category_name" placeholder="Add new category" required>
+        <button class="btn btn-primary" type="submit">
+          <span class="btn-ic">＋</span>
+          <span>Add Category</span>
+        </button>
+      </form>
+
+      {% if categories %}
+        <div class="table-shell">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th style="width:180px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for category in categories %}
+                <tr>
+                  <td>{{ category.name }}</td>
+                  <td>
+                    <form method="post" action="{{ url_for('manager.update_category') }}" class="inline-form">
+                      <input type="hidden" name="category_id" value="{{ category.id }}">
+                      <input name="category_new_name" value="{{ category.name }}" required>
+                      <button class="btn btn-secondary btn-mini" type="submit">Rename</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">📁</div>
+          <p>No categories added yet.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="manager-section" data-fragment="inventory">
+      <div class="section-head">
+        <h2>Inventory</h2>
+        <p>Monitor every registered product.</p>
+      </div>
+
+      <section class="card table-card">
+      <div class="card-head">
+        <div>
+          <h2>Products</h2>
+          <p class="muted">Everything registered for {{ shop.name }}.</p>
+        </div>
+      </div>
+
+      {% if products %}
+        <div class="table-shell">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Brand</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Added</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in products %}
+                <tr>
+                  <td>{{ p.name }}</td>
+                  <td>{{ p.category_name or "-" }}</td>
+                  <td>{{ p.brand_name or "-" }}</td>
+                  <td>PKR {{ '%.2f'|format(p.price) }}</td>
+                  <td>
+                    <span class="pill {% if p.quantity == 0 %}warn{% else %}ok{% endif %}">
+                      {{ p.quantity }} units
+                    </span>
+                  </td>
+                  <td>{{ p.created_at }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty">
+          <div class="empty-art">📄</div>
+          <h3>No products yet</h3>
+          <p>Register your first product to begin tracking stock.</p>
+        </div>
+      {% endif %}
+      </section>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  const navItems = document.querySelectorAll(".nav-item");
+  const sections = document.querySelectorAll(".manager-section");
+
+  navItems.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const target = btn.dataset.section;
+      navItems.forEach(n=> n.classList.remove("active"));
+      btn.classList.add("active");
+
+      sections.forEach(sec=>{
+        sec.classList.toggle("active", sec.dataset.fragment === target);
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

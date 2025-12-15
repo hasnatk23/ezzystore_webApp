@@ -28,9 +28,24 @@ def login():
 
             if user["role"] == "admin":
                 return redirect(url_for("admin.dashboard"))
-            else:
-                # manager panel not built yet
-                return "Logged in as manager. Manager panel will be added later.", 200
+
+            if user["role"] == "manager":
+                shop = get_db().execute("""
+                    SELECT s.id, s.name
+                    FROM shops s
+                    JOIN shop_managers sm ON sm.shop_id = s.id
+                    WHERE sm.manager_user_id = ?
+                    LIMIT 1;
+                """, (user["id"],)).fetchone()
+
+                if not shop:
+                    session.clear()
+                    flash("This manager account is not assigned to any shop yet.", "error")
+                    return redirect(url_for("auth.login"))
+
+                session["shop_id"] = shop["id"]
+                session["shop_name"] = shop["name"]
+                return redirect(url_for("manager.dashboard"))
 
         flash("Invalid username or password", "error")
         return redirect(url_for("auth.login"))

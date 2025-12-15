@@ -12,186 +12,199 @@
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 </head>
-<body>
+<body class="admin-body">
 
-<div class="layout">
+<div class="admin-page">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <img class="sidebar-logo" src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore">
+  <header class="admin-hero">
+    <div class="hero-brand">
+      <div class="hero-logo">
+        <img src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore logo">
+      </div>
       <div>
-        <div class="brand-name">Ezzystore</div>
-        <div class="brand-sub">Owner Admin</div>
+        <p class="eyebrow">Owner Console</p>
+        <h1>Shop Management</h1>
+        <p>Spin up new shops, then assign one manager to each from a single dashboard.</p>
       </div>
     </div>
 
-    <nav class="nav">
-      <a class="nav-item active" href="#">
-        <span class="nav-ic">🏬</span>
-        <span>Shop Management</span>
-      </a>
-      <div class="nav-divider"></div>
-      <div class="nav-hint">Create shops, assign managers, manage access.</div>
-    </nav>
+    <div class="hero-actions">
+      <div class="hero-user">
+        <span class="hero-user-label">Signed in as</span>
+        <span class="hero-user-name">{{ session.username }}</span>
+      </div>
+      <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+  </header>
 
-    <div class="sidebar-foot">
-      <div class="who">
-        <div class="who-dot"></div>
-        <div class="who-text">
-          <div class="who-name">{{ session.username }}</div>
-          <div class="who-role">Owner</div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="alerts">
+        {% for category, msg in messages %}
+          <div class="toast {{ category }}">
+            <div class="toast-ic">{% if category == "success" %}✓{% else %}!{% endif %}</div>
+            <div class="toast-text">{{ msg }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <section class="panel-grid">
+    <article class="card cta-card">
+      <div>
+        <p class="eyebrow">Create shop</p>
+        <h2>Open a new location</h2>
+        <p>Each shop can host exactly one manager account.</p>
+      </div>
+      <button class="btn btn-primary" data-open-modal="shopCreateModal">
+        <span class="btn-ic">＋</span>
+        <span>New Shop</span>
+      </button>
+    </article>
+
+    <article class="card stat-card">
+      <p class="eyebrow">Total shops</p>
+      <div class="stat">{{ total_shops }}</div>
+      <p class="muted">All active shops.</p>
+    </article>
+
+    <article class="card stat-card good">
+      <p class="eyebrow">Assigned</p>
+      <div class="stat">{{ assigned_shops }}</div>
+      <p class="muted">Managers already linked.</p>
+    </article>
+
+    <article class="card stat-card warn">
+      <p class="eyebrow">Pending</p>
+      <div class="stat">{{ pending_shops }}</div>
+      <p class="muted">Need manager assignments.</p>
+    </article>
+  </section>
+
+  <section class="insights-grid">
+    <article class="card highlight-card">
+      <div>
+        <p class="eyebrow">Need attention</p>
+        <h3>{{ pending_shops }} pending shop{{ "s" if pending_shops != 1 else "" }}</h3>
+        <p class="muted">Assign managers to keep every location staffed. Invite a new manager right after creating a shop.</p>
+      </div>
+      <a class="btn btn-secondary" href="#shopsTable">
+        <span class="btn-ic">⚡</span>
+        <span>Review shops</span>
+      </a>
+    </article>
+
+    <article class="card activity-card">
+      <div class="card-head">
+        <div>
+          <h2>Recent activity</h2>
+          <p class="muted">Latest shops and manager updates.</p>
         </div>
       </div>
-      <a class="btn btn-outline btn-block" href="{{ url_for('auth.logout') }}">Logout</a>
-    </div>
-  </aside>
 
-  <!-- Main -->
-  <main class="main">
+      {% if shops %}
+        <ul class="timeline">
+          {% for s in shops[:4] %}
+            <li>
+              <div class="dot {% if s.manager_name %}ok{% else %}warn{% endif %}"></div>
+              <div>
+                <p class="timeline-title">{{ s.name }}</p>
+                {% if s.manager_name %}
+                  <p class="muted">Assigned to {{ s.manager_name }} (@{{ s.manager_username }})</p>
+                {% else %}
+                  <p class="muted">Awaiting manager assignment</p>
+                {% endif %}
+                <span class="timeline-date">{{ s.created_at }}</span>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">🗂</div>
+          <p>No activity yet.</p>
+        </div>
+      {% endif %}
+    </article>
+  </section>
 
-    <header class="topheader">
+  <section class="card table-card" id="shopsTable">
+    <div class="card-head">
       <div>
-        <h1 class="page-title">Shop Management</h1>
-        <p class="page-subtitle">Create, update, delete shops and assign one manager to each shop.</p>
+        <h2>Shops</h2>
+        <p class="muted">Assign a manager as soon as a shop is created.</p>
       </div>
+    </div>
 
-      <div class="top-actions">
+    {% if shops %}
+      <div class="table-shell">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:90px;">ID</th>
+              <th>Shop</th>
+              <th style="width:280px;">Manager</th>
+              <th style="width:220px;">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for s in shops %}
+            <tr>
+              <td><span class="badge">#{{ s.id }}</span></td>
+
+              <td>
+                <div class="shopcell">
+                  <div class="shopname">{{ s.name }}</div>
+                  <div class="shopsub">Created: {{ s.created_at }}</div>
+                </div>
+              </td>
+
+              <td>
+                {% if s.manager_name %}
+                  <div class="stack">
+                    <div class="mname">{{ s.manager_name }}</div>
+                    <div class="muted">@{{ s.manager_username }}</div>
+                  </div>
+                {% else %}
+                  <span class="muted">Not assigned</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if s.manager_name %}
+                  <span class="pill ok">Assigned</span>
+                {% else %}
+                  <button type="button"
+                          class="btn btn-secondary btn-mini"
+                          data-open-modal="managerAssignModal"
+                          data-shop-id="{{ s.id }}"
+                          data-shop-name="{{ s.name }}">
+                    <span class="btn-ic">👤</span>
+                    <span>Assign Manager</span>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">
+        <div class="empty-art">🏬</div>
+        <h3>No shops created</h3>
+        <p>Create your first shop to start assigning managers.</p>
         <button class="btn btn-primary" data-open-modal="shopCreateModal">
           <span class="btn-ic">＋</span>
           <span>New Shop</span>
         </button>
       </div>
-    </header>
+    {% endif %}
+  </section>
 
-    <!-- Flash alerts -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="alerts">
-          {% for category, msg in messages %}
-            <div class="toast {{ category }}">
-              <div class="toast-ic">{% if category == "success" %}✓{% else %}!{% endif %}</div>
-              <div class="toast-text">{{ msg }}</div>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
-
-    <!-- Table Card -->
-    <section class="card">
-      <div class="card-head">
-        <div>
-          <h2 class="card-title">Shops</h2>
-          <p class="card-sub">Use row actions to edit, delete, or assign a manager.</p>
-        </div>
-
-        <div class="card-actions">
-          <div class="search">
-            <span class="search-ic">⌕</span>
-            <input id="shopSearch" type="text" placeholder="Search shops..." />
-          </div>
-        </div>
-      </div>
-
-      {% if shops %}
-        <div class="table-shell">
-          <table class="table" id="shopsTable">
-            <thead>
-              <tr>
-                <th style="width:90px;">ID</th>
-                <th>Shop</th>
-                <th style="width:280px;">Manager</th>
-                <th style="width:160px;">Status</th>
-                <th style="width:260px;">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {% for s in shops %}
-              <tr>
-                <td><span class="badge">#{{ s.id }}</span></td>
-
-                <td>
-                  <div class="shopcell">
-                    <div class="shopname">{{ s.name }}</div>
-                    <div class="shopsub">Created: {{ s.created_at }}</div>
-                  </div>
-                </td>
-
-                <td>
-                  {% if s.manager_name %}
-                    <div class="stack">
-                      <div class="mname">{{ s.manager_name }}</div>
-                      <div class="muted">@{{ s.manager_username }}</div>
-                    </div>
-                  {% else %}
-                    <span class="muted">Not assigned</span>
-                  {% endif %}
-                </td>
-
-                <td>
-                  {% if s.manager_name %}
-                    <span class="pill ok">Assigned</span>
-                  {% else %}
-                    <span class="pill warn">Pending</span>
-                  {% endif %}
-                </td>
-
-                <td>
-                  <div class="row-actions">
-
-                    {% if not s.manager_name %}
-                      <button type="button"
-                              class="btn btn-secondary btn-mini"
-                              data-open-modal="managerAssignModal"
-                              data-shop-id="{{ s.id }}"
-                              data-shop-name="{{ s.name }}">
-                        <span class="btn-ic">👤</span>
-                        <span>Assign Manager</span>
-                      </button>
-                    {% endif %}
-
-                    <button type="button"
-                            class="btn btn-soft btn-mini"
-                            data-open-modal="shopEditModal"
-                            data-shop-id="{{ s.id }}"
-                            data-shop-name="{{ s.name }}">
-                      <span class="btn-ic">✎</span>
-                      <span>Edit</span>
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-danger btn-mini"
-                            data-open-modal="shopDeleteModal"
-                            data-shop-id="{{ s.id }}"
-                            data-shop-name="{{ s.name }}">
-                      <span class="btn-ic">🗑</span>
-                      <span>Delete</span>
-                    </button>
-
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-
-          </table>
-        </div>
-      {% else %}
-        <div class="empty">
-          <div class="empty-art">🏬</div>
-          <h3>No shops created</h3>
-          <p>Create your first shop to start assigning managers.</p>
-          <button class="btn btn-primary" data-open-modal="shopCreateModal">
-            <span class="btn-ic">＋</span>
-            <span>New Shop</span>
-          </button>
-        </div>
-      {% endif %}
-    </section>
-
-  </main>
 </div>
 
 <!-- ===================== MODALS ===================== -->
@@ -217,64 +230,6 @@
         <button type="button" class="btn btn-soft" data-close-modal="shopCreateModal">Cancel</button>
         <button type="submit" class="btn btn-primary">
           <span>Create</span><span class="btn-ic">→</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Edit Shop (rename) -->
-<div class="modal-backdrop" id="shopEditModal" aria-hidden="true">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <div class="modal-title">Update Shop</div>
-        <div class="modal-sub">Rename the selected shop.</div>
-      </div>
-      <button class="icon-btn" data-close-modal="shopEditModal">✕</button>
-    </div>
-
-    <!-- create this route in backend -->
-    <form method="post" action="{{ url_for('admin.update_shop') }}" class="modal-body">
-      <input type="hidden" name="shop_id" id="editShopId">
-      <div class="field">
-        <label>Shop Name</label>
-        <input name="shop_name" id="editShopName" required>
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn btn-soft" data-close-modal="shopEditModal">Cancel</button>
-        <button type="submit" class="btn btn-primary">
-          <span>Update</span><span class="btn-ic">→</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Delete Shop -->
-<div class="modal-backdrop" id="shopDeleteModal" aria-hidden="true">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <div class="modal-title">Delete Shop</div>
-        <div class="modal-sub">This action cannot be undone.</div>
-      </div>
-      <button class="icon-btn" data-close-modal="shopDeleteModal">✕</button>
-    </div>
-
-    <!-- create this route in backend -->
-    <form method="post" action="{{ url_for('admin.delete_shop') }}" class="modal-body">
-      <input type="hidden" name="shop_id" id="deleteShopId">
-
-      <div class="danger-box">
-        You are about to delete: <strong id="deleteShopName"></strong>
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn btn-soft" data-close-modal="shopDeleteModal">Cancel</button>
-        <button type="submit" class="btn btn-danger">
-          <span>Delete</span><span class="btn-ic">→</span>
         </button>
       </div>
     </form>
@@ -325,7 +280,6 @@
 </div>
 
 <script>
-  // Basic modal helper
   function openModal(id){
     const el = document.getElementById(id);
     el.classList.add("show");
@@ -355,42 +309,12 @@
     }
   });
 
-  // Fill Edit modal
-  document.querySelectorAll('[data-open-modal="shopEditModal"]').forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      document.getElementById("editShopId").value = btn.dataset.shopId;
-      document.getElementById("editShopName").value = btn.dataset.shopName;
-    });
-  });
-
-  // Fill Delete modal
-  document.querySelectorAll('[data-open-modal="shopDeleteModal"]').forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      document.getElementById("deleteShopId").value = btn.dataset.shopId;
-      document.getElementById("deleteShopName").innerText = btn.dataset.shopName;
-    });
-  });
-
-  // Fill Assign Manager modal
   document.querySelectorAll('[data-open-modal="managerAssignModal"]').forEach(btn=>{
     btn.addEventListener("click", ()=>{
       document.getElementById("assignShopId").value = btn.dataset.shopId;
       document.getElementById("assignShopName").innerText = btn.dataset.shopName;
     });
   });
-
-  // Search
-  const shopSearch = document.getElementById("shopSearch");
-  const shopsTable = document.getElementById("shopsTable");
-  if(shopSearch && shopsTable){
-    shopSearch.addEventListener("input", ()=>{
-      const q = shopSearch.value.toLowerCase().trim();
-      shopsTable.querySelectorAll("tbody tr").forEach(r=>{
-        const name = r.querySelector(".shopname")?.innerText.toLowerCase() || "";
-        r.style.display = name.includes(q) ? "" : "none";
-      });
-    });
-  }
 </script>
 
 </body>

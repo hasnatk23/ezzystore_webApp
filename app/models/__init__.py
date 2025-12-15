@@ -1,4 +1,7 @@
 from .user import User
+from .brand import Brand
+from .category import Category
+from .product import Product
 
 def init_models(db):
     User.create_table(db)
@@ -25,5 +28,9 @@ def init_models(db):
       FOREIGN KEY (created_by)      REFERENCES users(id) ON DELETE RESTRICT
     );
     """)
+
+    Brand.create_table(db)
+    Category.create_table(db)
+    Product.create_table(db)
 
     User.ensure_default_admin(db)

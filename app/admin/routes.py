@@ -29,14 +29,17 @@ def dashboard():
         ORDER BY s.id DESC;
     """).fetchall()
 
-    managers = db.execute("""
-        SELECT id, full_name, username, created_at
-        FROM users
-        WHERE role='manager'
-        ORDER BY id DESC;
-    """).fetchall()
+    total_shops = len(shops)
+    assigned_shops = sum(1 for s in shops if s["manager_name"])
+    pending_shops = total_shops - assigned_shops
 
-    return render_template("admin.html", shops=shops, managers=managers)
+    return render_template(
+        "admin.html",
+        shops=shops,
+        total_shops=total_shops,
+        assigned_shops=assigned_shops,
+        pending_shops=pending_shops,
+    )
 
 @admin_bp.route("/create_shop", methods=["POST"])
 @admin_required

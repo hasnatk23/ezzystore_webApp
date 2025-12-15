@@ -19,11 +19,14 @@
     <div class="login-card">
 
       <!-- Brand -->
-      <div class="brand">
-        <img src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore Logo">
-        <h1>Ezzystore</h1>
-        <p>Owner & Manager Login</p>
-      </div>
+  <div class="brand">
+    <div class="logo-circle">
+      <img src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore Logo">
+    </div>
+    <h1>Ezzystore</h1>
+    <p>Sign in to your account</p>
+  </div>
+
 
       <!-- Flash messages -->
       {% with messages = get_flashed_messages(with_categories=true) %}
