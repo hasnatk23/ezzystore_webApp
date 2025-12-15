@@ -1,0 +1,147 @@
+:root{
+  --orange:#f97316;
+  --orange-dark:#ea580c;
+  --bg:#f9fafb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --shadow: 0 20px 50px rgba(17,24,39,.12);
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  min-height:100vh;
+  font-family: "Inter", system-ui, sans-serif;
+  background:
+    radial-gradient(800px 420px at 10% 0%, rgba(249,115,22,.15), transparent 55%),
+    radial-gradient(600px 420px at 90% 10%, rgba(251,146,60,.12), transparent 55%),
+    linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+  display:grid;
+  place-items:center;
+  color:var(--text);
+}
+
+/* Page container */
+.login-page{
+  width:100%;
+  padding:20px;
+  display:grid;
+  place-items:center;
+}
+
+/* Card */
+.login-card{
+  width:100%;
+  max-width:420px;
+  background:var(--card);
+  border-radius:20px;
+  padding:36px 32px 32px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);
+}
+
+/* Brand */
+.brand{
+  text-align:center;
+  margin-bottom:22px;
+}
+.brand img{
+  height:52px;
+  margin-bottom:10px;
+}
+.brand h1{
+  margin:0;
+  font-size:26px;
+  font-weight:900;
+  letter-spacing:-0.02em;
+}
+.brand p{
+  margin:6px 0 0;
+  color:var(--muted);
+  font-weight:500;
+}
+
+/* Alerts */
+.alerts{
+  margin-bottom:14px;
+}
+.alert{
+  padding:10px 12px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:8px;
+}
+.alert.error{
+  background:#fef2f2;
+  color:#991b1b;
+  border:1px solid #fecaca;
+}
+.alert.success{
+  background:#ecfdf5;
+  color:#065f46;
+  border:1px solid #bbf7d0;
+}
+
+/* Form */
+.login-form{
+  display:grid;
+  gap:14px;
+}
+
+.field label{
+  display:block;
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:6px;
+  color:#374151;
+}
+
+.field input{
+  width:100%;
+  padding:12px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-size:14px;
+  font-weight:500;
+  outline:none;
+  transition: border .15s ease, box-shadow .15s ease;
+}
+
+.field input:focus{
+  border-color:var(--orange);
+  box-shadow:0 0 0 4px rgba(249,115,22,.15);
+}
+
+/* Button */
+.btn{
+  margin-top:6px;
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.btn-primary{
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff;
+  box-shadow:0 12px 30px rgba(249,115,22,.35);
+}
+
+.btn-primary:hover{
+  filter:brightness(1.05);
+}
+
+/* Footer */
+.footer-note{
+  margin-top:18px;
+  text-align:center;
+  font-size:12px;
+  color:var(--muted);
+}
