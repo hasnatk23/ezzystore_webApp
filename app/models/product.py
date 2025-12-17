@@ -87,3 +87,11 @@ class Product:
             DELETE FROM products
             WHERE id=? AND shop_id=?;
         """, (product_id, shop_id))
+
+    @staticmethod
+    def adjust_quantity(db, shop_id: int, product_id: int, delta: int):
+        db.execute("""
+            UPDATE products
+            SET quantity = quantity + ?
+            WHERE id=? AND shop_id=?;
+        """, (delta, product_id, shop_id))

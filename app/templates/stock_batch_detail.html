@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ shop.name }} &middot; Restock {{ batch_date }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
+</head>
+<body class="category-detail-body">
+  <main class="category-detail-main">
+    <header class="category-detail-hero">
+      <div>
+        <p class="eyebrow">Restock run</p>
+        <h1>{{ batch_date }}</h1>
+        <p class="muted">{{ entries|length }} product{{ '' if entries|length == 1 else 's' }} · Total purchase PKR {{ '%.2f'|format(total_purchase) }}</p>
+      </div>
+      <div class="detail-actions">
+        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}" target="_blank" rel="noopener">Open Dashboard</a>
+        <a class="btn btn-secondary" href="{{ url_for('manager.dashboard') }}">Back to manager</a>
+      </div>
+    </header>
+
+    {% set total_items = entries|length %}
+
+    <section class="category-detail-card info-card">
+      <div class="category-detail-info">
+        <div>
+          <h2>Restock metrics</h2>
+          <p class="muted">Snapshot for the {{ batch_date }} restock run.</p>
+        </div>
+      </div>
+      <div class="category-detail-stats">
+        <article>
+          <p class="muted tiny">Products</p>
+          <p class="stat">{{ total_items }}</p>
+          <p class="muted mini">Items restocked</p>
+        </article>
+        <article>
+          <p class="muted tiny">Total purchase</p>
+          <p class="stat">PKR {{ '%.2f'|format(total_purchase) }}</p>
+          <p class="muted mini">Sum of quantity × rate</p>
+        </article>
+        <article>
+          <p class="muted tiny">Projected sale</p>
+          <p class="stat">PKR {{ '%.2f'|format(total_sale) }}</p>
+          <p class="muted mini">Based on configured sale price</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="category-detail-card table-card">
+      <div class="card-head">
+        <div>
+          <h2>Restock details</h2>
+          <p class="muted">Line-by-line summary of items added on {{ batch_date }}.</p>
+        </div>
+        <div class="category-detail-filter">
+          <label>
+            <span>Search</span>
+            <input type="search" id="restockEntrySearch" placeholder="Filter by product" autocomplete="off">
+          </label>
+        </div>
+      </div>
+
+      {% if entries %}
+        <div class="table-shell">
+          <table class="table" id="restockEntryTable">
+            <thead>
+              <tr>
+                <th>Sr.</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Purchase rate</th>
+                <th>Total purchase</th>
+                <th>Sale price</th>
+                <th>Recorded at</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in entries %}
+                <tr data-product-name="{{ entry.product_name | lower }}">
+                  <td>{{ loop.index }}</td>
+                  <td>{{ entry.product_name }}</td>
+                  <td>{{ entry.quantity }} units</td>
+                  <td>PKR {{ '%.2f'|format(entry.purchase_rate) }}</td>
+                  <td>PKR {{ '%.2f'|format(entry.quantity * entry.purchase_rate) }}</td>
+                  <td>PKR {{ '%.2f'|format(entry.sale_price) }}</td>
+                  <td>{{ entry.created_at }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">📦</div>
+          <p>No entries recorded for this restock.</p>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script>
+    const restockEntrySearch = document.getElementById('restockEntrySearch');
+    const restockTableRows = document.querySelectorAll('#restockEntryTable tbody tr');
+    if (restockEntrySearch && restockTableRows.length) {
+      const filterRows = () => {
+        const term = restockEntrySearch.value.trim().toLowerCase();
+        restockTableRows.forEach(row => {
+          const name = row.dataset.productName || '';
+          const show = !term || name.includes(term);
+          row.style.display = show ? '' : 'none';
+        });
+      };
+      restockEntrySearch.addEventListener('input', filterRows);
+    }
+  </script>
+</body>
+</html>

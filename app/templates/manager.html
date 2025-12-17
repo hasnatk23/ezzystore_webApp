@@ -1,429 +1,1430 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ezzystore • Manager</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
-</head>
-<body class="manager-body">
-
-<div class="manager-layout">
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="logo-circle">
-        <img src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore logo">
-      </div>
-      <div>
-        <p class="eyebrow">Manager</p>
-        <h2>{{ shop.name }}</h2>
-      </div>
-    </div>
-
-    <nav class="nav">
-      <button class="nav-item active" data-section="overview">
-        <span>Overview</span>
-      </button>
-      <button class="nav-item" data-section="manage">
-        <span>Manage Products</span>
-      </button>
-      <button class="nav-item" data-section="stock">
-        <span>Add Stock</span>
-      </button>
-      <button class="nav-item" data-section="brands">
-        <span>Brands</span>
-      </button>
-      <button class="nav-item" data-section="categories">
-        <span>Categories</span>
-      </button>
-      <button class="nav-item" data-section="inventory">
-        <span>Inventory</span>
-      </button>
-    </nav>
-
-    <div class="sidebar-foot">
-      <div class="hero-user">
-        <span class="hero-user-label">Signed in as</span>
-        <span class="hero-user-name">{{ session.username }}</span>
-      </div>
-      <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Logout</a>
-    </div>
-  </aside>
-
-  <main class="manager-main">
-
-    <section class="manager-section active" data-fragment="overview">
-      <header class="manager-hero">
-        <div>
-          <p class="eyebrow">Manager Console</p>
-          <h1>{{ shop.name }}</h1>
-          <p>Track products, add inventory, and keep this shop running smoothly.</p>
-        </div>
-      </header>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="alerts">
-          {% for category, msg in messages %}
-            <div class="toast {{ category }}">
-              <div class="toast-ic">{% if category == "success" %}✓{% else %}!{% endif %}</div>
-              <div class="toast-text">{{ msg }}</div>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
-
-    <section class="stat-grid">
-      <article class="card stat-card">
-        <p class="eyebrow">Products</p>
-        <div class="stat">{{ total_products }}</div>
-        <p class="muted">Registered for this shop.</p>
-      </article>
-      <article class="card stat-card good">
-        <p class="eyebrow">Total stock</p>
-        <div class="stat">{{ total_stock }}</div>
-        <p class="muted">Units currently available.</p>
-      </article>
-      <article class="card stat-card warn">
-        <p class="eyebrow">Out of stock</p>
-        <div class="stat">{{ out_of_stock }}</div>
-        <p class="muted">Products needing a restock.</p>
-      </article>
-    </section>
-    </section>
-
-    <section class="manager-section" data-fragment="manage">
-      <div class="section-head manage-head">
-        <div class="manage-head-text">
-          <h2>Manage Products</h2>
-          <p>Browse categories, view products, and add new ones inline.</p>
-        </div>
-        <div class="manage-meta">
-          <span class="meta-label">Total products</span>
-          <span class="meta-value">{{ total_products }}</span>
-        </div>
-      </div>
-
-      {% if categories %}
-        <div class="category-grid">
-          {% for category in categories %}
-            <article class="category-card">
-              <header class="category-card-head">
-                <div>
-                  <h3>{{ category.name }}</h3>
-                  <p>{{ category_counts[category.id] | default(0) }} products</p>
-                </div>
-                <span class="badge">{{ category_counts[category.id] | default(0) }}</span>
-              </header>
-
-              <form method="post" action="{{ url_for('manager.create_product') }}" class="category-add-form">
-                <input type="hidden" name="product_category_id" value="{{ category.id }}">
-                <label>
-                  <span>Product name</span>
-                  <input name="product_name" placeholder="Add product" required>
-                </label>
-                <label>
-                  <span>Brand</span>
-                  <select name="product_brand_id">
-                    <option value="">No brand</option>
-                    {% for brand in brands %}
-                      <option value="{{ brand.id }}">{{ brand.name }}</option>
-                    {% endfor %}
-                  </select>
-                </label>
-                <button class="btn btn-primary btn-mini" type="submit">Add</button>
-              </form>
-
-              <details class="category-details" {% if loop.first %}open{% endif %}>
-                <summary>Products</summary>
-                <div class="category-products">
-                  {% if category_products[category.id] %}
-                    {% for p in category_products[category.id] %}
-                      <div class="product-card" data-name="{{ p.name | lower }}">
-                        <div class="product-index">#{{ loop.index }}</div>
-                        <form method="post" action="{{ url_for('manager.update_product') }}" class="product-edit" id="productEdit-{{ category.id }}-{{ p.id }}">
-                          <input type="hidden" name="edit_product_id" value="{{ p.id }}">
-                          <div class="product-fields">
-                            <label>
-                              <span>Name</span>
-                              <input name="edit_product_name" value="{{ p.name }}" required>
-                            </label>
-                            <label>
-                              <span>Brand</span>
-                              <select name="edit_product_brand_id">
-                                <option value="">No brand</option>
-                                {% for brand in brands %}
-                                  <option value="{{ brand.id }}" {% if p.brand_id == brand.id %}selected{% endif %}>{{ brand.name }}</option>
-                                {% endfor %}
-                              </select>
-                            </label>
-                            <label>
-                              <span>Category</span>
-                              <select name="edit_product_category_id" required>
-                                <option value="">Select category</option>
-                                {% for cat in categories %}
-                                  <option value="{{ cat.id }}" {% if p.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-                                {% endfor %}
-                              </select>
-                            </label>
-                          </div>
-                        </form>
-                        <form method="post" action="{{ url_for('manager.delete_product') }}" class="product-delete" id="productDelete-{{ category.id }}-{{ p.id }}">
-                          <input type="hidden" name="delete_product_id" value="{{ p.id }}">
-                        </form>
-                        <div class="product-actions">
-                          <button class="btn btn-primary btn-mini" form="productEdit-{{ category.id }}-{{ p.id }}" type="submit">Save</button>
-                          <button class="btn btn-soft btn-mini" form="productDelete-{{ category.id }}-{{ p.id }}" type="submit">Delete</button>
-                        </div>
-                      </div>
-                    {% endfor %}
-                  {% else %}
-                    <div class="empty mini">
-                      <div class="empty-art">📦</div>
-                      <p>No products in this category yet.</p>
-                    </div>
-                  {% endif %}
-                </div>
-              </details>
-            </article>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty mini">
-          <div class="empty-art">📁</div>
-          <p>Create a category first to start adding products.</p>
-        </div>
-      {% endif %}
-    </section>
-
-    <section class="manager-section" data-fragment="stock">
-      <div class="section-head">
-        <h2>Inventory Boost</h2>
-        <p>Quickly increase product quantities.</p>
-      </div>
-
-      <article class="card form-card">
-        <div class="card-head">
-          <div>
-            <h2>Add stock</h2>
-            <p class="muted">Increase quantity for registered products.</p>
-          </div>
-        </div>
-
-        {% if products %}
-          <form method="post" action="{{ url_for('manager.add_stock') }}" class="form-grid">
-            <label>
-              <span>Product</span>
-              <select name="product_id" required>
-                <option value="" disabled selected>Select product</option>
-                {% for p in products %}
-                  <option value="{{ p.id }}">{{ p.name }}</option>
-                {% endfor %}
-              </select>
-            </label>
-
-            <label>
-              <span>Quantity</span>
-              <input type="number" min="1" name="stock_quantity" placeholder="e.g., 25" required>
-            </label>
-
-            <label>
-              <span>Unit Price (PKR)</span>
-              <input type="number" step="0.01" min="0" name="stock_price" placeholder="0.00" required>
-            </label>
-
-            <button type="submit" class="btn btn-secondary">
-              <span class="btn-ic">⬆</span>
-              <span>Add Stock</span>
-            </button>
-          </form>
-        {% else %}
-          <div class="empty mini">
-            <div class="empty-art">📦</div>
-            <p>Register a product to add stock.</p>
-          </div>
-        {% endif %}
-      </article>
-    </section>
-
-    <section class="manager-section" data-fragment="brands">
-      <div class="card-head">
-        <div>
-          <h2>Brands</h2>
-          <p class="muted">Maintain brand names used across products.</p>
-        </div>
-      </div>
-
-      <form method="post" action="{{ url_for('manager.create_brand') }}" class="brand-form">
-        <input name="brand_name" placeholder="Add new brand" required>
-        <button class="btn btn-primary" type="submit">
-          <span class="btn-ic">＋</span>
-          <span>Add Brand</span>
-        </button>
-      </form>
-
-      {% if brands %}
-        <div class="table-shell">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Brand</th>
-                <th style="width:180px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for brand in brands %}
-                <tr>
-                  <td>{{ brand.name }}</td>
-                  <td>
-                    <form method="post" action="{{ url_for('manager.update_brand') }}" class="inline-form">
-                      <input type="hidden" name="brand_id" value="{{ brand.id }}">
-                      <input name="brand_new_name" value="{{ brand.name }}" required>
-                      <button class="btn btn-secondary btn-mini" type="submit">Rename</button>
-                    </form>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="empty mini">
-          <div class="empty-art">🏷</div>
-          <p>No brands added yet.</p>
-        </div>
-      {% endif %}
-    </section>
-
-    <section class="manager-section" data-fragment="categories">
-      <div class="card-head">
-        <div>
-          <h2>Categories</h2>
-          <p class="muted">Organize products into categories.</p>
-        </div>
-      </div>
-
-      <form method="post" action="{{ url_for('manager.create_category') }}" class="brand-form">
-        <input name="category_name" placeholder="Add new category" required>
-        <button class="btn btn-primary" type="submit">
-          <span class="btn-ic">＋</span>
-          <span>Add Category</span>
-        </button>
-      </form>
-
-      {% if categories %}
-        <div class="table-shell">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th style="width:180px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for category in categories %}
-                <tr>
-                  <td>{{ category.name }}</td>
-                  <td>
-                    <form method="post" action="{{ url_for('manager.update_category') }}" class="inline-form">
-                      <input type="hidden" name="category_id" value="{{ category.id }}">
-                      <input name="category_new_name" value="{{ category.name }}" required>
-                      <button class="btn btn-secondary btn-mini" type="submit">Rename</button>
-                    </form>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="empty mini">
-          <div class="empty-art">📁</div>
-          <p>No categories added yet.</p>
-        </div>
-      {% endif %}
-    </section>
-
-    <section class="manager-section" data-fragment="inventory">
-      <div class="section-head">
-        <h2>Inventory</h2>
-        <p>Monitor every registered product.</p>
-      </div>
-
-      <section class="card table-card">
-      <div class="card-head">
-        <div>
-          <h2>Products</h2>
-          <p class="muted">Everything registered for {{ shop.name }}.</p>
-        </div>
-      </div>
-
-      {% if products %}
-        <div class="table-shell">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Brand</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Added</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in products %}
-                <tr>
-                  <td>{{ p.name }}</td>
-                  <td>{{ p.category_name or "-" }}</td>
-                  <td>{{ p.brand_name or "-" }}</td>
-                  <td>PKR {{ '%.2f'|format(p.price) }}</td>
-                  <td>
-                    <span class="pill {% if p.quantity == 0 %}warn{% else %}ok{% endif %}">
-                      {{ p.quantity }} units
-                    </span>
-                  </td>
-                  <td>{{ p.created_at }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="empty">
-          <div class="empty-art">📄</div>
-          <h3>No products yet</h3>
-          <p>Register your first product to begin tracking stock.</p>
-        </div>
-      {% endif %}
-      </section>
-    </section>
-
-  </main>
-</div>
-
-<script>
-  const navItems = document.querySelectorAll(".nav-item");
-  const sections = document.querySelectorAll(".manager-section");
-
-  navItems.forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const target = btn.dataset.section;
-      navItems.forEach(n=> n.classList.remove("active"));
-      btn.classList.add("active");
-
-      sections.forEach(sec=>{
-        sec.classList.toggle("active", sec.dataset.fragment === target);
-      });
-    });
-  });
-</script>
-
-</body>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ezzystore • Manager</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
+</head>
+<body class="manager-body">
+
+<div class="manager-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-circle">
+        <img src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore logo">
+      </div>
+      <div>
+        <p class="eyebrow">Manager</p>
+        <h2>{{ shop.name }}</h2>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <p class="nav-label">Navigation</p>
+      <button class="nav-item active" data-section="overview">
+        <span class="nav-ic">🏠</span>
+        <span class="nav-text">Overview</span>
+      </button>
+      <button class="nav-item" data-section="manage">
+        <span class="nav-ic">🛍️</span>
+        <span class="nav-text">Manage Products</span>
+      </button>
+      <button class="nav-item" data-section="stock">
+        <span class="nav-ic">📦</span>
+        <span class="nav-text">Stock Management</span>
+      </button>
+      <button class="nav-item" data-section="sales">
+        <span class="nav-ic">🧾</span>
+        <span class="nav-text">Sales & Returns</span>
+      </button>
+      <button class="nav-item" data-section="brands">
+        <span class="nav-ic">🏷️</span>
+        <span class="nav-text">Brands</span>
+      </button>
+      <button class="nav-item" data-section="categories">
+        <span class="nav-ic">🗂️</span>
+        <span class="nav-text">Categories</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-card metrics-card">
+      <p class="sidebar-card-label">Quick stats</p>
+      <div class="sidebar-metric">
+        <span>Products</span>
+        <strong>{{ total_products }}</strong>
+      </div>
+      <div class="sidebar-metric">
+        <span>Total stock</span>
+        <strong>{{ total_stock }}</strong>
+      </div>
+      <div class="sidebar-metric">
+        <span>Out of stock</span>
+        <strong>{{ out_of_stock }}</strong>
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="hero-user">
+        <span class="hero-user-label">Signed in as</span>
+        <span class="hero-user-name">{{ session.username }}</span>
+      </div>
+      <div class="sidebar-card support-card">
+        <p class="sidebar-card-label">Need help?</p>
+        <p class="muted tiny">Have a question about your shop? Our team is ready.</p>
+        <a class="btn btn-primary btn-mini" href="mailto:support@ezzystore.app">Contact support</a>
+      </div>
+      <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+  </aside>
+
+  <main class="manager-main">
+
+    <section class="manager-section active" data-fragment="overview">
+      <header class="manager-hero">
+        <div>
+          <p class="eyebrow">Manager Console</p>
+          <h1>{{ shop.name }}</h1>
+          <p>Track products, add inventory, and keep this shop running smoothly.</p>
+        </div>
+      </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alerts">
+          {% for category, msg in messages %}
+            <div class="toast {{ category }}">
+              <div class="toast-ic">{% if category == "success" %}✓{% else %}!{% endif %}</div>
+              <div class="toast-text">{{ msg }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="stat-grid">
+      <article class="card stat-card">
+        <p class="eyebrow">Products</p>
+        <div class="stat">{{ total_products }}</div>
+        <p class="muted">Registered for this shop.</p>
+      </article>
+      <article class="card stat-card good">
+        <p class="eyebrow">Total stock</p>
+        <div class="stat">{{ total_stock }}</div>
+        <p class="muted">Units currently available.</p>
+      </article>
+      <article class="card stat-card warn">
+        <p class="eyebrow">Out of stock</p>
+        <div class="stat">{{ out_of_stock }}</div>
+        <p class="muted">Products needing a restock.</p>
+      </article>
+    </section>
+    </section>
+
+    {% set low_stock_products = products | selectattr('quantity', 'gt', 0) | selectattr('quantity', 'lt', 6) | list %}
+    {% set uncategorized_products = products | selectattr('category_id', 'equalto', None) | list %}
+
+    <section class="manager-section" data-fragment="manage">
+      <div class="section-head manage-head">
+        <div class="manage-head-text">
+          <h2>Manage Products</h2>
+          <p>Quickly browse products, filter by attributes, and edit existing entries.</p>
+        </div>
+        <div class="manage-meta">
+          <span class="meta-label">Total products</span>
+          <span class="meta-value">{{ total_products }}</span>
+        </div>
+      </div>
+
+      <div class="manage-insights">
+        <article class="card insight-card">
+          <div class="insight-icon">📦</div>
+          <div>
+            <p class="muted tiny">Out of stock</p>
+            <p class="insight-value">{{ out_of_stock }}</p>
+            <p class="muted mini">Products needing urgent restock.</p>
+          </div>
+        </article>
+        <article class="card insight-card info">
+          <div class="insight-icon">⚠️</div>
+          <div>
+            <p class="muted tiny">Low inventory</p>
+            <p class="insight-value">{{ low_stock_products|length }}</p>
+            <p class="muted mini">Between 1-5 units remain.</p>
+          </div>
+        </article>
+        <article class="card insight-card soft">
+          <div class="insight-icon">🗂️</div>
+          <div>
+            <p class="muted tiny">Uncategorized</p>
+            <p class="insight-value">{{ uncategorized_products|length }}</p>
+            <p class="muted mini">Assign these for better reporting.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="card manage-products-card">
+        <div class="product-toolbar">
+          <div>
+            <p class="eyebrow">Product library</p>
+            <h3>Search, filter, and edit inline</h3>
+          </div>
+          <div class="product-toolbar-filters">
+            <label class="field">
+              <span>Search</span>
+              <input type="search" id="productSearch" placeholder="Search product name" autocomplete="off">
+            </label>
+            <label class="field">
+              <span>Category</span>
+              <select id="productCategoryFilter">
+                <option value="">All</option>
+                <option value="none">Uncategorized</option>
+                {% for category in categories %}
+                  <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="field">
+              <span>Brand</span>
+              <select id="productBrandFilter">
+                <option value="">All</option>
+                <option value="none">No brand</option>
+                {% for brand in brands %}
+                  <option value="{{ brand.id }}">{{ brand.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+        </div>
+
+        {% if products %}
+          <div class="filter-chips" role="group" aria-label="Stock filters">
+            <button class="chip active" type="button" data-stock-filter="">All</button>
+            <button class="chip" type="button" data-stock-filter="low">Low stock</button>
+            <button class="chip" type="button" data-stock-filter="out">Out of stock</button>
+            <button class="chip" type="button" data-stock-filter="ok">Healthy</button>
+          </div>
+          <p class="muted mini" id="visibleProductCount">
+            Showing {{ total_products }} product{{ '' if total_products == 1 else 's' }}.
+          </p>
+          <div class="product-grid manage-product-grid" id="productGrid">
+            {% for p in products %}
+              {% set stock_state = 'ok' %}
+              {% set stock_label = 'Healthy stock' %}
+              {% if p.quantity == 0 %}
+                {% set stock_state = 'out' %}
+                {% set stock_label = 'Out of stock' %}
+              {% elif p.quantity <= 5 %}
+                {% set stock_state = 'low' %}
+                {% set stock_label = 'Low stock' %}
+              {% endif %}
+              {% set purchase_summary = product_purchase_summary.get(p.id) %}
+              {% set purchase_previews = product_purchase_previews.get(p.id, []) %}
+              <article
+                class="product-card product-card-tile manage-product-card"
+                data-product-card
+                data-product-name="{{ p.name | lower }}"
+                data-product-category="{{ p.category_id if p.category_id is not none else 'none' }}"
+                data-product-brand="{{ p.brand_id if p.brand_id is not none else 'none' }}"
+                data-product-stock="{{ stock_state }}">
+                <div class="product-card-head">
+                  <div>
+                    <p class="eyebrow">Product</p>
+                    <h3>{{ p.name }}</h3>
+                    <p class="muted">{{ p.category_name or 'Uncategorized' }}</p>
+                  </div>
+                  <span class="product-stock-badge {{ stock_state }}">{{ stock_label }}</span>
+                  <div class="tile-actions">
+                    <button class="icon-btn icon-edit" type="button" aria-label="Edit {{ p.name }}"
+                            data-edit-product
+                            data-product-id="{{ p.id }}"
+                            data-product-name="{{ p.name }}"
+                            data-product-brand="{{ p.brand_id or '' }}"
+                            data-product-category="{{ p.category_id or '' }}">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm13.71-9.04 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z" fill="currentColor"/>
+                      </svg>
+                    </button>
+                    <button class="icon-btn icon-delete" type="button" aria-label="Delete {{ p.name }}"
+                            data-delete-product
+                            data-product-id="{{ p.id }}"
+                            data-product-name="{{ p.name }}">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2zm2 5v8h2V9h-2z" fill="currentColor"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="product-tile-meta">
+                  <div class="product-mini-card">
+                    <p class="mini-label">Brand</p>
+                    <p class="mini-value">{{ p.brand_name or 'No brand' }}</p>
+                  </div>
+                  <div class="product-mini-card">
+                    <p class="mini-label">Price</p>
+                    <p class="mini-value">PKR {{ '%.2f'|format(p.price) }}</p>
+                  </div>
+                  <div class="product-mini-card">
+                    <p class="mini-label">Quantity</p>
+                    <p class="mini-value">
+                      <span class="pill
+                        {% if p.quantity == 0 %}warn
+                        {% elif p.quantity <= 5 %}low
+                        {% else %}ok
+                        {% endif %}">
+                        {{ p.quantity }} units
+                    </span>
+                  </p>
+                </div>
+                  <div class="product-mini-card">
+                    <p class="mini-label">Restocks</p>
+                    <p class="mini-value">
+                      {{ purchase_summary["total_quantity"] if purchase_summary else 0 }} units ·
+                      {{ purchase_summary["total_batches"] if purchase_summary else 0 }} restock{{ '' if purchase_summary and purchase_summary["total_batches"] == 1 else 's' }}
+                    </p>
+                    <p class="mini-label muted">
+                      Spend: PKR {{ '%.2f'|format(purchase_summary["total_spend"]) if purchase_summary else '0.00' }}
+                    </p>
+                  </div>
+                  <div class="product-mini-card">
+                    <p class="mini-label">Last restock</p>
+                    {% set last_preview = purchase_previews[0] if purchase_previews else None %}
+                    <p class="mini-value">
+                      {{ last_preview.batch_date if last_preview else 'No history' }}
+                    </p>
+                    {% if last_preview %}
+                      <p class="mini-label muted">
+                        {{ last_preview.quantity }} @ PKR {{ '%.2f'|format(last_preview.purchase_rate) }}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+                {% if purchase_previews %}
+                  <div class="purchase-preview">
+                    <p class="mini-label">Recent restocks</p>
+                    <ul class="purchase-preview-list">
+                      {% for preview in purchase_previews %}
+                        <li>
+                          <span class="purchase-index">{{ loop.index }}.</span>
+                          <span class="purchase-date">{{ preview.batch_date }}</span>
+                          <strong>{{ preview.quantity }} @ PKR {{ '%.2f'|format(preview.purchase_rate) }}</strong>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endif %}
+                <div class="product-card-foot">
+                  {% if p.category_id %}
+                    <a class="btn btn-soft btn-mini" href="{{ url_for('manager.category_detail', category_id=p.category_id) }}" target="_blank" rel="noopener">
+                      Open category
+                    </a>
+                  {% else %}
+                    <span class="muted tiny">Assign a category to link details.</span>
+                  {% endif %}
+                  <a class="btn btn-secondary btn-mini" href="{{ url_for('manager.product_purchases', product_id=p.id) }}" target="_blank" rel="noopener">
+                    View restocks
+                  </a>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+          <div class="empty mini" id="productEmpty" hidden>
+            <div class="empty-art">??</div>
+            <p>No products match these filters.</p>
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty-art">??</div>
+            <h3>No products yet</h3>
+            <p>Add products from the category or brand detail views.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="modal-backdrop manage-modal" id="editProductModal">
+        <div class="modal">
+          <div class="modal-head">
+            <div>
+              <p class="modal-title">Edit product</p>
+              <p class="modal-sub">Update name, brand, or category.</p>
+            </div>
+            <button class="icon-btn" type="button" data-product-modal-close>&times;</button>
+          </div>
+          <form class="modal-body" method="post" action="{{ url_for('manager.update_product') }}">
+            <input type="hidden" name="edit_product_id" id="editProductId">
+            <label class="field">
+              <span>Name</span>
+              <input name="edit_product_name" id="editProductName" required>
+            </label>
+            <label class="field">
+              <span>Brand</span>
+              <select name="edit_product_brand_id" id="editProductBrand">
+                <option value="">No brand</option>
+                {% for brand in brands %}
+                  <option value="{{ brand.id }}">{{ brand.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="field">
+              <span>Category</span>
+              <select name="edit_product_category_id" id="editProductCategory" required>
+                <option value="">Select category</option>
+                {% for category in categories %}
+                  <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <div class="modal-actions">
+              <button class="btn btn-soft" type="button" data-product-modal-close>Cancel</button>
+              <button class="btn btn-primary" type="submit">Save changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal-backdrop manage-modal" id="deleteProductModal">
+        <div class="modal">
+          <div class="modal-head">
+            <div>
+              <p class="modal-title">Delete product</p>
+              <p class="modal-sub">Removing a product cannot be undone.</p>
+            </div>
+            <button class="icon-btn" type="button" data-product-modal-close>&times;</button>
+          </div>
+          <form class="modal-body" method="post" action="{{ url_for('manager.delete_product') }}">
+            <input type="hidden" name="delete_product_id" id="deleteProductId">
+            <p>Are you sure you want to remove <strong id="deleteProductName"></strong>?</p>
+            <div class="modal-actions">
+              <button class="btn btn-soft" type="button" data-product-modal-close>Cancel</button>
+              <button class="btn btn-primary" type="submit">Delete product</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="manager-section" data-fragment="stock">
+      <div class="section-head">
+        <h2>Stock Management</h2>
+        <p>Record restock runs and maintain accurate stock history.</p>
+      </div>
+
+      {% set restock_stats = namespace(total_spend=0) %}
+      {% for summary in stock_batch_summary %}
+        {% set restock_stats.total_spend = restock_stats.total_spend + summary.total_purchase %}
+      {% endfor %}
+      {% set latest_restock = stock_batch_summary[0] if stock_batch_summary else None %}
+
+      <div class="restock-insights">
+        <article class="card insight-card">
+          <div class="insight-icon">🛒</div>
+          <div>
+            <p class="muted tiny">Runs logged</p>
+            <p class="insight-value">{{ stock_batch_summary|length }}</p>
+            <p class="muted mini">Total restock operations.</p>
+          </div>
+        </article>
+        <article class="card insight-card info">
+          <div class="insight-icon">💸</div>
+          <div>
+            <p a class="muted tiny">Total spend</p>
+            <p class="insight-value">PKR {{ '%.2f'|format(restock_stats.total_spend) }}</p>
+            <p class="muted mini">Cumulative purchase cost.</p>
+          </div>
+        </article>
+        <article class="card insight-card soft">
+          <div class="insight-icon">📅</div>
+          <div>
+            <p class="muted tiny">Last restock</p>
+            <p class="insight-value">{{ latest_restock.batch_date if latest_restock else '—' }}</p>
+            <p class="muted mini">Most recent run date.</p>
+          </div>
+        </article>
+      </div>
+
+      <article class="card form-card">
+        <div class="card-head">
+          <div>
+            <h2>Log restock</h2>
+            <p class="muted">Select every product included in this restock run, then enter purchase details.</p>
+          </div>
+        </div>
+
+        {% if products %}
+          <div class="restock-grid">
+            <div class="batch-select">
+              <div class="batch-select-head">
+                <div>
+                  <p class="eyebrow">Step 1</p>
+                  <h3>Select products to restock</h3>
+                  <p class="muted">Check every product included in this restock run.</p>
+                </div>
+                <span class="selected-counter" id="batchSelectionHint">Pick at least one product to continue.</span>
+              </div>
+              <div class="category-search batch-search">
+                <label for="batchProductSearch">
+                  <span>Search products</span>
+                  <input type="search" id="batchProductSearch" placeholder="Type to filter products" autocomplete="off">
+                </label>
+              </div>
+              <div class="product-checklist" id="batchProductChecklist">
+                {% for p in products %}
+                  {% set latest = product_latest.get(p.id) %}
+                  <label class="checkbox-card" data-product-name="{{ p.name | lower }}">
+                    <input type="checkbox"
+                           value="{{ p.id }}"
+                           data-product-name="{{ p.name }}"
+                           data-purchase-rate="{{ latest.purchase_rate if latest else '' }}"
+                           data-sale-price="{{ latest.sale_price if latest else '' }}">
+                    <div>
+                      <span>{{ p.name }}</span>
+                      <small>
+                        {% if latest %}
+                          Last purchase PKR {{ '%.2f'|format(latest.purchase_rate) }} • Sale PKR {{ '%.2f'|format(latest.sale_price) }}
+                        {% else %}
+                          {{ p.category_name or "-" }}
+                        {% endif %}
+                      </small>
+                    </div>
+                  </label>
+                {% endfor %}
+              </div>
+              <div class="batch-select-actions">
+                <button class="btn btn-secondary" type="button" id="prepareBatchBtn">
+                  <span class="btn-ic">➡</span>
+                  <span>Next: enter details</span>
+                </button>
+              </div>
+            </div>
+
+            <article class="card form-card multi-batch-card" id="multiBatchCard" hidden>
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">Step 2</p>
+                  <h2>Restock details</h2>
+                  <p class="muted">Enter quantity, purchase rate, and sale price for each selected product.</p>
+                </div>
+                <button class="btn btn-soft btn-mini" type="button" id="resetBatchSelection">Back to selection</button>
+              </div>
+              <form method="post" action="{{ url_for('manager.add_stock') }}" id="multiBatchForm">
+                <label class="batch-date-field">
+                  <span>Restock date</span>
+                  <input type="date" name="batch_date_group" id="batchDateGroup" value="{{ today_iso }}" required>
+                </label>
+                <div id="batchEntryContainer"></div>
+                <button type="submit" class="btn btn-secondary">
+                  <span class="btn-ic">🧾</span>
+                  <span>Save Restock</span>
+                </button>
+              </form>
+            </article>
+          </div>
+        {% else %}
+          <div class="empty mini">
+            <div class="empty-art">📦</div>
+            <p>Register a product to start logging stock.</p>
+          </div>
+        {% endif %}
+      </article>
+
+      <section class="card table-card">
+        <div class="card-head">
+          <div>
+            <h2>Recent restocks</h2>
+            <p class="muted">Review each restock run at a glance.</p>
+          </div>
+        </div>
+        {% if stock_batch_summary %}
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Sr.</th>
+                  <th>Restock date</th>
+                  <th>Products</th>
+                  <th>Total purchase</th>
+                  <th style="width:160px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for summary in stock_batch_summary %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ summary.batch_date }}</td>
+                    <td>{{ summary.product_count }} products</td>
+                    <td>PKR {{ '%.2f'|format(summary.total_purchase) }}</td>
+                    <td>
+                      <a class="btn btn-secondary btn-mini" href="{{ url_for('manager.stock_batch_detail', batch_date=summary.batch_date) }}" target="_blank" rel="noopener">
+                        View details
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty mini">
+            <div class="empty-art">🧾</div>
+            <p>No restocks recorded yet.</p>
+          </div>
+        {% endif %}
+      </section>
+    </section>
+
+    <section class="manager-section" data-fragment="sales">
+      <div class="section-head">
+        <h2>Sales &amp; Returns</h2>
+        <p>Sell products to customers or record returns that add stock back.</p>
+      </div>
+
+      {% set sales_insight = namespace(total_amount=0) %}
+      {% for block in recent_sales %}
+        {% set sales_insight.total_amount = sales_insight.total_amount + block.sale["total_amount"] %}
+      {% endfor %}
+      {% set latest_sale = recent_sales[0] if recent_sales else None %}
+
+      <div class="restock-insights">
+        <article class="card insight-card">
+          <div class="insight-icon">🛍️</div>
+          <div>
+            <p class="muted tiny">Transactions logged</p>
+            <p class="insight-value">{{ recent_sales|length }}</p>
+            <p class="muted mini">Shows latest activity.</p>
+          </div>
+        </article>
+        <article class="card insight-card info">
+          <div class="insight-icon">💰</div>
+          <div>
+            <p class="muted tiny">Total value</p>
+            <p class="insight-value">PKR {{ '%.2f'|format(sales_insight.total_amount) }}</p>
+            <p class="muted mini">Sum of recent sales/returns.</p>
+          </div>
+        </article>
+        <article class="card insight-card soft">
+          <div class="insight-icon">🕒</div>
+          <div>
+            <p class="muted tiny">Last transaction</p>
+            <p class="insight-value">{{ latest_sale.sale.created_at if latest_sale else '—' }}</p>
+            <p class="muted mini">{{ latest_sale.sale.sale_type|capitalize if latest_sale else 'No history yet' }}</p>
+          </div>
+        </article>
+      </div>
+
+      {% if products %}
+        <div class="restock-grid sale-grid">
+          <div class="batch-select">
+            <div class="batch-select-head">
+              <div>
+                <p class="eyebrow">Step 1</p>
+                <h3>Select products to sell/return</h3>
+                <p class="muted">Check every product included in this transaction.</p>
+              </div>
+              <span class="selected-counter" id="saleSelectionHint">Pick at least one product to continue.</span>
+            </div>
+            <div class="category-search batch-search">
+              <label for="saleProductSearch">
+                <span>Search products</span>
+                <input type="search" id="saleProductSearch" placeholder="Type to filter products" autocomplete="off">
+              </label>
+            </div>
+            <div class="product-checklist" id="saleProductChecklist">
+              {% for p in products %}
+                {% set default_sale = product_sale_defaults.get(p.id) if product_sale_defaults else None %}
+                <label class="checkbox-card" data-sale-product-name="{{ p.name | lower }}">
+                  <input type="checkbox"
+                         value="{{ p.id }}"
+                         data-product-name="{{ p.name }}"
+                         data-sale-price="{{ default_sale if default_sale is not none else '%.2f'|format(p.price) }}">
+                  <div>
+                    <span>{{ p.name }}</span>
+                    <small>{{ p.category_name or "-" }}</small>
+                  </div>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="batch-select-actions">
+              <button class="btn btn-secondary" type="button" id="prepareSaleBtn">
+                <span class="btn-ic">➡</span>
+                <span>Next: enter details</span>
+              </button>
+            </div>
+          </div>
+
+          <article class="card form-card multi-batch-card" id="multiSaleCard" hidden>
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Step 2</p>
+                <h2>Sale details</h2>
+                <p class="muted">Enter quantity and confirm sale price for each line.</p>
+              </div>
+              <button class="btn btn-soft btn-mini" type="button" id="resetSaleSelection">Back to selection</button>
+            </div>
+            <form method="post" action="{{ url_for('manager.record_sale') }}" id="multiSaleForm">
+              <input type="hidden" name="sale_type" value="sale">
+              <div id="saleEntryContainer"></div>
+              <button type="submit" class="btn btn-primary">
+                <span class="btn-ic">🧾</span>
+                <span>Save transaction</span>
+              </button>
+            </form>
+          </article>
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">📦</div>
+          <p>Register a product to start recording sales.</p>
+        </div>
+      {% endif %}
+
+      <section class="card table-card">
+        <div class="card-head">
+          <div>
+            <h2>Recent sales &amp; returns</h2>
+            <p class="muted">Latest recorded transactions.</p>
+          </div>
+        </div>
+        {% if recent_sales %}
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Sr.</th>
+                  <th>Type</th>
+                  <th>Total</th>
+                  <th>When</th>
+                  <th>Items</th>
+                  <th style="width:140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for block in recent_sales %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ block.sale.sale_type|capitalize }}</td>
+                    <td>PKR {{ '%.2f'|format(block.sale.total_amount) }}</td>
+                    <td>{{ block.sale.created_at }}</td>
+                    <td>
+                      <ul class="purchase-preview-list">
+                        {% for item in block.sale_items %}
+                          <li>
+                            <span class="purchase-index">{{ loop.index }}.</span>
+                            <div class="purchase-date">
+                              <strong class="purchase-product">{{ item.product_name }}</strong>
+                              <small class="muted">Qty {{ item.quantity }}</small>
+                            </div>
+                            <strong>{{ item.quantity }} @ PKR {{ '%.2f'|format(item.unit_price) }}</strong>
+                            {% if block.sale.sale_type == "sale" %}
+                              <button class="btn btn-soft btn-mini return-inline-btn" type="button"
+                                      data-return-sale-item
+                                      data-sale-id="{{ block.sale.id }}"
+                                      data-sale-item='{{ item|tojson|e }}'>
+                                Return
+                              </button>
+                            {% endif %}
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </td>
+                    <td>
+                      {% if block.sale.sale_type == "sale" %}
+                        <span class="muted tiny">Use line actions</span>
+                      {% else %}
+                        <span class="muted tiny">Return logged</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty mini">
+            <div class="empty-art">🧾</div>
+            <p>No sales or returns recorded yet.</p>
+          </div>
+        {% endif %}
+      </section>
+    </section>
+
+    <section class="manager-section" data-fragment="brands">
+      <div class="card-head">
+        <div>
+          <h2>Brands</h2>
+          <p class="muted">Maintain brand names used across products.</p>
+        </div>
+      </div>
+
+      <div class="brand-controls">
+        <div class="category-search brand-search">
+          <label for="brandSearch">
+            <span>Search brands</span>
+            <input type="search" id="brandSearch" placeholder="Type to filter brands" autocomplete="off">
+          </label>
+        </div>
+        <button class="fab brand-fab" id="addBrandFab" type="button" title="Add brand" aria-label="Add brand">+</button>
+      </div>
+
+      {% if brands %}
+        <div class="category-card-grid brand-card-grid">
+          {% for brand in brands %}
+            <article class="category-card-link brand-card" data-brand-name="{{ brand.name | lower }}" data-brand-url="{{ url_for('manager.brand_detail', brand_id=brand.id) }}" tabindex="0" role="button" aria-label="Open {{ brand.name }} detail in new tab">
+              <div class="brand-card-head">
+                <div>
+                  <p class="category-pill-label">Brand</p>
+                  <h3>{{ brand.name }}</h3>
+                  <p class="muted">{{ brand_counts[brand.id] | default(0) }} products</p>
+                </div>
+                <span class="category-count-badge">{{ brand_counts[brand.id] | default(0) }}</span>
+              </div>
+              <div class="brand-card-foot">
+                <span class="muted">Click card to manage products</span>
+                <button type="button" class="btn btn-soft btn-mini brand-rename-btn" data-rename-brand data-brand-id="{{ brand.id }}" data-brand-name="{{ brand.name }}">Rename</button>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        <div class="empty mini category-search-empty" id="brandEmpty" hidden>
+          <div class="empty-art">🔍</div>
+          <p>No brands match your search.</p>
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">🏷</div>
+          <p>No brands added yet.</p>
+        </div>
+      {% endif %}
+
+      <div class="modal-backdrop brand-modal" id="addBrandModal">
+        <div class="modal">
+          <div class="modal-head">
+            <div>
+              <p class="modal-title">Add brand</p>
+              <p class="modal-sub">Register a new brand for {{ shop.name }}.</p>
+            </div>
+            <button class="icon-btn" type="button" data-brand-modal-close>&times;</button>
+          </div>
+          <form class="modal-body" method="post" action="{{ url_for('manager.create_brand') }}">
+            <label class="field">
+              <span>Brand name</span>
+              <input name="brand_name" placeholder="e.g., Nike" required>
+            </label>
+            <div class="modal-actions">
+              <button class="btn btn-soft" type="button" data-brand-modal-close>Cancel</button>
+              <button class="btn btn-primary" type="submit">Add brand</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal-backdrop brand-modal" id="renameBrandModal">
+        <div class="modal">
+          <div class="modal-head">
+            <div>
+              <p class="modal-title">Rename brand</p>
+              <p class="modal-sub">Update the brand name for {{ shop.name }}.</p>
+            </div>
+            <button class="icon-btn" type="button" data-brand-modal-close>&times;</button>
+          </div>
+          <form class="modal-body" method="post" action="{{ url_for('manager.update_brand') }}">
+            <input type="hidden" name="brand_id" id="renameBrandId">
+            <label class="field">
+              <span>Brand name</span>
+              <input name="brand_new_name" id="renameBrandName" required>
+            </label>
+            <div class="modal-actions">
+              <button class="btn btn-soft" type="button" data-brand-modal-close>Cancel</button>
+              <button class="btn btn-primary" type="submit">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="manager-section" data-fragment="categories">
+      <div class="card-head">
+        <div>
+          <h2>Categories</h2>
+          <p class="muted">Organize products into categories.</p>
+        </div>
+      </div>
+
+      <form method="post" action="{{ url_for('manager.create_category') }}" class="brand-form">
+        <input name="category_name" placeholder="Add new category" required>
+        <button class="btn btn-primary" type="submit">
+          <span class="btn-ic">＋</span>
+          <span>Add Category</span>
+        </button>
+      </form>
+
+      {% if categories %}
+        <div class="table-shell">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th style="width:180px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for category in categories %}
+                <tr>
+                  <td>{{ category.name }}</td>
+                  <td>
+                    <form method="post" action="{{ url_for('manager.update_category') }}" class="inline-form">
+                      <input type="hidden" name="category_id" value="{{ category.id }}">
+                      <input name="category_new_name" value="{{ category.name }}" required>
+                      <button class="btn btn-secondary btn-mini" type="submit">Rename</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">📁</div>
+          <p>No categories added yet.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    
+
+  </main>
+</div>
+
+<div class="modal-backdrop" id="returnSaleModal">
+  <div class="modal">
+    <div class="modal-head">
+        <div>
+          <p class="modal-title">Return items</p>
+          <p class="modal-sub">Select quantities to return to stock.</p>
+        </div>
+        <button class="icon-btn" type="button" data-return-modal-close>&times;</button>
+      </div>
+      <form class="modal-body" method="post" id="returnSaleForm">
+        <div id="returnSaleContainer"></div>
+        <label class="confirm-return-checkbox">
+          <input type="checkbox" id="returnSaleConfirm">
+          <span>I confirm these items are being returned by the customer.</span>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-soft" type="button" data-return-modal-close>Cancel</button>
+          <button class="btn btn-primary" id="confirmReturnBtn" type="submit" disabled>Submit return</button>
+        </div>
+      </form>
+  </div>
+</div>
+
+<script>
+  const navItems = document.querySelectorAll(".nav-item");
+  const sections = document.querySelectorAll(".manager-section");
+
+  navItems.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const target = btn.dataset.section;
+      navItems.forEach(n=> n.classList.remove("active"));
+      btn.classList.add("active");
+
+      sections.forEach(sec=>{
+        sec.classList.toggle("active", sec.dataset.fragment === target);
+      });
+    });
+  });
+
+  const categorySearch = document.getElementById("categorySearch");
+  const categoryCards = document.querySelectorAll("[data-category-name]");
+  const categoryEmpty = document.getElementById("categoryEmpty");
+
+  if(categorySearch && categoryCards.length){
+    const filter = ()=>{
+      const term = categorySearch.value.trim().toLowerCase();
+      let visible = 0;
+      categoryCards.forEach(card=>{
+        const match = !term || card.dataset.categoryName.includes(term);
+        card.classList.toggle("hidden", !match);
+        if(match) visible += 1;
+      });
+      if(categoryEmpty){
+        categoryEmpty.hidden = visible !== 0;
+      }
+    };
+    categorySearch.addEventListener("input", filter);
+  }
+
+  const brandSearch = document.getElementById("brandSearch");
+  const brandCards = document.querySelectorAll("[data-brand-name]");
+  const brandEmpty = document.getElementById("brandEmpty");
+
+  if(brandSearch && brandCards.length){
+    const filterBrands = ()=>{
+      const term = brandSearch.value.trim().toLowerCase();
+      let visible = 0;
+      brandCards.forEach(card=>{
+        const match = !term || (card.dataset.brandName || "").includes(term);
+        card.classList.toggle("hidden", !match);
+        if(match) visible += 1;
+      });
+      if(brandEmpty){
+        brandEmpty.hidden = visible !== 0;
+      }
+    };
+    brandSearch.addEventListener("input", filterBrands);
+  }
+
+  const openBrandDetail = card=>{
+    const url = card.dataset.brandUrl;
+    if(url){
+      window.open(url, "_blank", "noopener");
+    }
+  };
+
+  brandCards.forEach(card=>{
+    card.addEventListener("click", ()=> openBrandDetail(card));
+    card.addEventListener("keydown", evt=>{
+      if(evt.key === "Enter" || evt.key === " "){
+        evt.preventDefault();
+        openBrandDetail(card);
+      }
+    });
+  });
+
+  const brandModals = document.querySelectorAll(".brand-modal");
+  const openBrandModal = modal => modal && modal.classList.add("show");
+  const closeBrandModal = modal => modal && modal.classList.remove("show");
+
+  brandModals.forEach(backdrop=>{
+    backdrop.addEventListener("click", evt=>{
+      if(evt.target === backdrop){
+        closeBrandModal(backdrop);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-brand-modal-close]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      closeBrandModal(btn.closest(".brand-modal"));
+    });
+  });
+
+  const addBrandFab = document.getElementById("addBrandFab");
+  const addBrandModal = document.getElementById("addBrandModal");
+  if(addBrandFab && addBrandModal){
+    addBrandFab.addEventListener("click", ()=> openBrandModal(addBrandModal));
+  }
+
+  const renameBrandModal = document.getElementById("renameBrandModal");
+  const renameBrandId = document.getElementById("renameBrandId");
+  const renameBrandName = document.getElementById("renameBrandName");
+
+  document.querySelectorAll("[data-rename-brand]").forEach(btn=>{
+    btn.addEventListener("click", evt=>{
+      evt.stopPropagation();
+      if(renameBrandModal && renameBrandId && renameBrandName){
+        renameBrandId.value = btn.dataset.brandId || "";
+        renameBrandName.value = btn.dataset.brandName || "";
+        openBrandModal(renameBrandModal);
+      }
+    });
+  });
+
+  document.addEventListener("keydown", evt=>{
+    if(evt.key === "Escape"){
+      brandModals.forEach(closeBrandModal);
+    }
+  });
+
+  const saleReturnBase = {{ url_for('manager.sale_return', sale_id=0)|tojson }};
+  const productCards = document.querySelectorAll("[data-product-card]");
+  const productSearchInput = document.getElementById("productSearch");
+  const productCategoryFilter = document.getElementById("productCategoryFilter");
+  const productBrandFilter = document.getElementById("productBrandFilter");
+  const productEmptyState = document.getElementById("productEmpty");
+  const visibleProductCount = document.getElementById("visibleProductCount");
+  const stockFilterButtons = document.querySelectorAll("[data-stock-filter]");
+  let activeStockFilter = "";
+
+  const applyProductFilters = ()=>{
+    if(!productCards.length){
+      return;
+    }
+    const term = (productSearchInput?.value || "").trim().toLowerCase();
+    const category = productCategoryFilter?.value || "";
+    const brand = productBrandFilter?.value || "";
+    let visible = 0;
+    productCards.forEach(card=>{
+      const matchesTerm = !term || (card.dataset.productName || "").includes(term);
+      const matchesCategory = !category || (card.dataset.productCategory || "") === category;
+      const matchesBrand = !brand || (card.dataset.productBrand || "") === brand;
+      const matchesStock = !activeStockFilter || (card.dataset.productStock || "") === activeStockFilter;
+      const show = matchesTerm && matchesCategory && matchesBrand && matchesStock;
+      card.classList.toggle("hidden", !show);
+      if(show){
+        visible += 1;
+      }
+    });
+    if(productEmptyState){
+      productEmptyState.hidden = visible !== 0;
+    }
+    if(visibleProductCount){
+      visibleProductCount.textContent = visible
+        ? `Showing ${visible} product${visible === 1 ? "" : "s"}.`
+        : "No products match these filters.";
+    }
+  };
+
+  productSearchInput?.addEventListener("input", applyProductFilters);
+  productCategoryFilter?.addEventListener("change", applyProductFilters);
+  productBrandFilter?.addEventListener("change", applyProductFilters);
+  stockFilterButtons.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      stockFilterButtons.forEach(chip=> chip.classList.remove("active"));
+      btn.classList.add("active");
+      activeStockFilter = btn.dataset.stockFilter || "";
+      applyProductFilters();
+    });
+  });
+
+  const productModals = document.querySelectorAll(".manage-modal");
+  const openProductModal = modal => modal && modal.classList.add("show");
+  const closeProductModal = modal => modal && modal.classList.remove("show");
+
+  productModals.forEach(backdrop=>{
+    backdrop.addEventListener("click", evt=>{
+      if(evt.target === backdrop){
+        closeProductModal(backdrop);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-product-modal-close]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      closeProductModal(btn.closest(".manage-modal"));
+    });
+  });
+
+  const editProductModal = document.getElementById("editProductModal");
+  const editProductId = document.getElementById("editProductId");
+  const editProductName = document.getElementById("editProductName");
+  const editProductBrand = document.getElementById("editProductBrand");
+  const editProductCategory = document.getElementById("editProductCategory");
+
+  document.querySelectorAll("[data-edit-product]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(!editProductModal){
+        return;
+      }
+      if(editProductId){
+        editProductId.value = btn.dataset.productId || "";
+      }
+      if(editProductName){
+        editProductName.value = btn.dataset.productName || "";
+      }
+      if(editProductBrand){
+        editProductBrand.value = btn.dataset.productBrand || "";
+      }
+      if(editProductCategory){
+        editProductCategory.value = btn.dataset.productCategory || "";
+      }
+      openProductModal(editProductModal);
+    });
+  });
+
+  const deleteProductModal = document.getElementById("deleteProductModal");
+  const deleteProductId = document.getElementById("deleteProductId");
+  const deleteProductName = document.getElementById("deleteProductName");
+
+  document.querySelectorAll("[data-delete-product]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(!deleteProductModal){
+        return;
+      }
+      if(deleteProductId){
+        deleteProductId.value = btn.dataset.productId || "";
+      }
+      if(deleteProductName){
+        deleteProductName.textContent = btn.dataset.productName || "";
+      }
+      openProductModal(deleteProductModal);
+    });
+  });
+
+  document.addEventListener("keydown", evt=>{
+    if(evt.key === "Escape"){
+      productModals.forEach(closeProductModal);
+    }
+  });
+
+  const checklist = document.getElementById("batchProductChecklist");
+  const batchSearchInput = document.getElementById("batchProductSearch");
+  const prepareBatchBtn = document.getElementById("prepareBatchBtn");
+  const multiBatchCard = document.getElementById("multiBatchCard");
+  const batchEntryContainer = document.getElementById("batchEntryContainer");
+  const resetBatchSelection = document.getElementById("resetBatchSelection");
+  const selectionHint = document.getElementById("batchSelectionHint");
+  const defaultBatchDate = {{ today_iso|tojson }};
+
+  const buildBatchRow = (productId, productName, defaults = {})=>{
+    const purchaseDefault = defaults.purchaseRate || "";
+    const saleDefault = defaults.salePrice || "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "batch-entry";
+    wrapper.innerHTML = `
+      <div class="batch-entry-head">
+        <strong>${productName}</strong>
+        <input type="hidden" name="batch_product_id[]" value="${productId}">
+      </div>
+      <div class="batch-entry-grid">
+        <label>
+          <span>Quantity</span>
+          <input type="number" name="batch_quantity[]" min="1" required placeholder="0">
+        </label>
+        <label>
+          <span>Purchase rate (PKR)</span>
+          <input type="number" step="0.01" min="0" name="batch_purchase_rate[]" required placeholder="0.00" value="${purchaseDefault}">
+        </label>
+        <label>
+          <span>Sale price (PKR)</span>
+          <input type="number" step="0.01" min="0" name="batch_sale_price[]" required placeholder="0.00" value="${saleDefault}">
+        </label>
+      </div>
+    `;
+    return wrapper;
+  };
+
+  if(prepareBatchBtn && checklist && batchEntryContainer){
+    prepareBatchBtn.addEventListener("click", ()=>{
+      const checked = checklist.querySelectorAll("input[type='checkbox']:checked");
+      if(!checked.length){
+        selectionHint.textContent = "Pick at least one product to continue.";
+        selectionHint.classList.add("error");
+        return;
+      }
+      selectionHint.textContent = `${checked.length} product(s) selected.`;
+      selectionHint.classList.remove("error");
+
+      batchEntryContainer.innerHTML = "";
+      checked.forEach(input=>{
+        const name = input.dataset.productName || "Product";
+        const defaults = {
+          purchaseRate: input.dataset.purchaseRate || "",
+          salePrice: input.dataset.salePrice || "",
+        };
+        batchEntryContainer.appendChild(buildBatchRow(input.value, name, defaults));
+      });
+      multiBatchCard.hidden = false;
+      multiBatchCard.scrollIntoView({behavior:"smooth"});
+    });
+  }
+
+  if(resetBatchSelection && multiBatchCard){
+    resetBatchSelection.addEventListener("click", ()=>{
+      multiBatchCard.hidden = true;
+      batchEntryContainer.innerHTML = "";
+    });
+  }
+
+  if(batchSearchInput && checklist){
+    const productCards = checklist.querySelectorAll(".checkbox-card");
+    const filterProducts = ()=>{
+      const term = batchSearchInput.value.trim().toLowerCase();
+      let visible = 0;
+      productCards.forEach(card=>{
+        const match = !term || (card.dataset.productName || "").includes(term);
+        card.classList.toggle("hidden", !match);
+        if(match) visible += 1;
+      });
+      selectionHint.textContent = visible ? `Showing ${visible} product(s)` : "No products match this search.";
+    };
+    batchSearchInput.addEventListener("input", filterProducts);
+  }
+
+  const saleChecklist = document.getElementById("saleProductChecklist");
+  const saleSearchInput = document.getElementById("saleProductSearch");
+  const prepareSaleBtn = document.getElementById("prepareSaleBtn");
+  const saleEntryContainer = document.getElementById("saleEntryContainer");
+  const multiSaleCard = document.getElementById("multiSaleCard");
+  const resetSaleSelection = document.getElementById("resetSaleSelection");
+  const saleSelectionHint = document.getElementById("saleSelectionHint");
+
+  const buildSaleRow = (productId, productName, defaults = {})=>{
+    const priceDefault = defaults.salePrice || "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "batch-entry";
+    wrapper.innerHTML = `
+      <div class="batch-entry-head">
+        <strong>${productName}</strong>
+        <input type="hidden" name="sale_product_id[]" value="${productId}">
+      </div>
+      <div class="batch-entry-grid">
+        <label>
+          <span>Quantity</span>
+          <input type="number" name="sale_quantity[]" min="1" required placeholder="0">
+        </label>
+        <label>
+          <span>Sale price (PKR)</span>
+          <input type="number" step="0.01" min="0" name="sale_price[]" required placeholder="0.00" value="${priceDefault}">
+        </label>
+      </div>
+    `;
+    return wrapper;
+  };
+
+  if(prepareSaleBtn && saleChecklist && saleEntryContainer){
+    prepareSaleBtn.addEventListener("click", ()=>{
+      const checked = saleChecklist.querySelectorAll("input[type='checkbox']:checked");
+      if(!checked.length){
+        saleSelectionHint.textContent = "Pick at least one product to continue.";
+        saleSelectionHint.classList.add("error");
+        return;
+      }
+      saleSelectionHint.textContent = `${checked.length} product(s) selected.`;
+      saleSelectionHint.classList.remove("error");
+      saleEntryContainer.innerHTML = "";
+      checked.forEach(input=>{
+        const name = input.dataset.productName || "Product";
+        const defaults = {
+          salePrice: input.dataset.salePrice || "",
+        };
+        saleEntryContainer.appendChild(buildSaleRow(input.value, name, defaults));
+      });
+      multiSaleCard.hidden = false;
+      multiSaleCard.scrollIntoView({behavior:"smooth"});
+    });
+  }
+
+  if(resetSaleSelection && multiSaleCard){
+    resetSaleSelection.addEventListener("click", ()=>{
+      multiSaleCard.hidden = true;
+      saleEntryContainer.innerHTML = "";
+    });
+  }
+
+  if(saleSearchInput && saleChecklist){
+    const saleCards = saleChecklist.querySelectorAll(".checkbox-card");
+    const filterSaleProducts = ()=>{
+      const term = saleSearchInput.value.trim().toLowerCase();
+      let visible = 0;
+      saleCards.forEach(card=>{
+        const match = !term || (card.dataset.saleProductName || "").includes(term);
+        card.classList.toggle("hidden", !match);
+        if(match){
+          visible += 1;
+        }
+      });
+      saleSelectionHint.textContent = visible ? `Showing ${visible} product(s)` : "No products match this search.";
+    };
+    saleSearchInput.addEventListener("input", filterSaleProducts);
+  }
+
+  const returnSaleModal = document.getElementById("returnSaleModal");
+  const returnSaleForm = document.getElementById("returnSaleForm");
+  const returnSaleContainer = document.getElementById("returnSaleContainer");
+  const returnSaleConfirm = document.getElementById("returnSaleConfirm");
+  const confirmReturnBtn = document.getElementById("confirmReturnBtn");
+
+  const refreshReturnButtonState = ()=>{
+    if(!confirmReturnBtn){
+      return;
+    }
+    const selected = returnSaleContainer?.querySelector(".return-item-toggle:checked");
+    confirmReturnBtn.disabled = !(returnSaleConfirm?.checked && selected);
+  };
+
+  const openReturnModal = (saleId, saleItemsData, { autoSelect = false } = {})=>{
+    if(!returnSaleModal || !returnSaleForm || !returnSaleContainer || !returnSaleConfirm || !confirmReturnBtn){
+      return;
+    }
+    if(!saleId || !saleItemsData.length){
+      return;
+    }
+    returnSaleForm.action = saleReturnBase.replace("/0/return", `/${saleId}/return`);
+    returnSaleContainer.innerHTML = "";
+    saleItemsData.forEach(item=>{
+      const entryId = `return-item-${item.id}`;
+      const wrapper = document.createElement("div");
+      wrapper.className = "batch-entry";
+      wrapper.innerHTML = `
+        <div class="batch-entry-head">
+          <label class="return-select">
+            <input type="checkbox" class="return-item-toggle" data-entry="${entryId}">
+            <span>${item.product_name}</span>
+          </label>
+          <input type="hidden" name="return_sale_item_id[]" value="${item.id}" data-return-field="${entryId}" disabled>
+          <input type="hidden" name="return_price[]" value="${item.unit_price}" data-return-field="${entryId}" disabled>
+        </div>
+        <div class="batch-entry-grid">
+          <label>
+            <span>Return quantity (max ${item.quantity})</span>
+            <input type="number" name="return_quantity[]" min="1" max="${item.quantity}" value="${item.quantity}" required data-return-field="${entryId}" disabled>
+          </label>
+          <label>
+            <span>Unit price (PKR)</span>
+            <input type="number" value="${item.unit_price}" readonly>
+          </label>
+        </div>
+      `;
+      returnSaleContainer.appendChild(wrapper);
+      const toggle = wrapper.querySelector(".return-item-toggle");
+      const toggleFields = checked=>{
+        wrapper.querySelectorAll(`[data-return-field="${entryId}"]`).forEach(input=>{
+          input.disabled = !checked;
+        });
+      };
+      toggle?.addEventListener("change", ()=>{
+        toggleFields(toggle.checked);
+        refreshReturnButtonState();
+      });
+      const initialState = autoSelect;
+      toggle.checked = initialState;
+      toggleFields(initialState);
+    });
+    returnSaleConfirm.checked = false;
+    refreshReturnButtonState();
+    returnSaleModal.classList.add("show");
+  };
+
+  document.querySelectorAll("[data-return-sale]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const saleId = btn.dataset.saleId;
+      const saleItemsData = btn.dataset.saleItems ? JSON.parse(btn.dataset.saleItems) : [];
+      openReturnModal(saleId, saleItemsData, { autoSelect: false });
+    });
+  });
+
+  document.querySelectorAll("[data-return-sale-item]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const saleId = btn.dataset.saleId;
+      const itemData = btn.dataset.saleItem ? JSON.parse(btn.dataset.saleItem) : null;
+      if(!itemData){
+        return;
+      }
+      openReturnModal(saleId, [itemData], { autoSelect: true });
+    });
+  });
+  returnSaleConfirm?.addEventListener("change", ()=>{
+    refreshReturnButtonState();
+  });
+
+  document.querySelectorAll("[data-return-modal-close]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      returnSaleModal?.classList.remove("show");
+    });
+  });
+
+  returnSaleModal?.addEventListener("click", evt=>{
+    if(evt.target === returnSaleModal){
+      returnSaleModal.classList.remove("show");
+    }
+  });
+</script>
+
+</body>
 </html>

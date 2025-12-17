@@ -2,6 +2,8 @@ from .user import User
 from .brand import Brand
 from .category import Category
 from .product import Product
+from .stock_batch import StockBatch
+from .sale import Sale
 
 def init_models(db):
     User.create_table(db)
@@ -32,5 +34,7 @@ def init_models(db):
     Brand.create_table(db)
     Category.create_table(db)
     Product.create_table(db)
+    StockBatch.create_table(db)
+    Sale.create_table(db)
 
     User.ensure_default_admin(db)

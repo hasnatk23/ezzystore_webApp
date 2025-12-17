@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ shop.name }} &middot; {{ brand.name }} Brand</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
+</head>
+<body class="category-detail-body brand-detail-body">
+  <main class="category-detail-main">
+    <header class="category-detail-hero">
+      <div>
+        <p class="eyebrow">Brand Overview</p>
+        <h1>{{ brand.name }}</h1>
+        <p class="muted">Part of {{ shop.name }} &middot; {{ products|length }} product{{ '' if products|length == 1 else 's' }}</p>
+      </div>
+      <div class="detail-actions">
+        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}" target="_blank" rel="noopener">Open Dashboard</a>
+        <a class="btn btn-secondary" href="{{ url_for('manager.dashboard') }}">Back to manager</a>
+      </div>
+    </header>
+
+    <section class="category-detail-card">
+      <div class="card-head">
+        <div>
+          <h2>Products</h2>
+          <p class="muted">Everything registered under {{ brand.name }}.</p>
+        </div>
+        <div class="category-detail-filter">
+          <label>
+            <span>Search</span>
+            <input type="search" id="brandProductSearch" placeholder="Filter by name or category" autocomplete="off">
+          </label>
+        </div>
+      </div>
+
+      {% if products %}
+        <div class="category-products product-grid">
+          {% for p in products %}
+            {% set stock_state = 'ok' %}
+            {% if p.quantity == 0 %}
+              {% set stock_state = 'out' %}
+            {% elif p.quantity <= 5 %}
+              {% set stock_state = 'low' %}
+            {% endif %}
+            <article class="product-card product-card-tile category-product-card"
+                     data-brand-product
+                     data-product-name="{{ p.name | lower }}"
+                     data-product-category="{{ (p.category_name or '') | lower }}"
+                     data-product-stock="{{ stock_state }}">
+              <div class="product-card-head">
+                <div>
+                  <p class="eyebrow">Product</p>
+                  <h3>{{ p.name }}</h3>
+                  <p class="muted">{{ p.category_name or 'No category' }}</p>
+                </div>
+                <div class="tile-actions">
+                  <button class="icon-btn icon-edit" type="button" aria-label="Edit {{ p.name }}"
+                          data-edit-product
+                          data-product-id="{{ p.id }}"
+                          data-product-name="{{ p.name }}"
+                          data-product-brand="{{ p.brand_id or '' }}"
+                          data-product-category="{{ p.category_id or '' }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm13.71-9.04 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z" fill="currentColor"/>
+                    </svg>
+                  </button>
+                  <button class="icon-btn icon-delete" type="button" aria-label="Delete {{ p.name }}"
+                          data-delete-product
+                          data-product-id="{{ p.id }}"
+                          data-product-name="{{ p.name }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2zm2 5v8h2V9h-2z" fill="currentColor"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="product-tile-meta">
+                <div>
+                  <span class="meta-label">Category</span>
+                  <p>{{ p.category_name or '-' }}</p>
+                </div>
+                <div>
+                  <span class="meta-label">Brand</span>
+                  <p>{{ brand.name }}</p>
+                </div>
+                <div>
+                  <span class="meta-label">Quantity</span>
+                  <p>{{ p.quantity }} units</p>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty mini">
+          <div class="empty-art">??</div>
+          <p>No products in this brand yet.</p>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <button class="fab detail-fab" id="addProductFab" title="Add product">+</button>
+
+  <div class="modal-backdrop" data-modal id="addProductModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <p class="modal-title">Add product</p>
+          <p class="modal-sub">Create a new product inside {{ brand.name }}.</p>
+        </div>
+        <button class="icon-btn" type="button" data-modal-close>&times;</button>
+      </div>
+      <form class="modal-body" method="post" action="{{ url_for('manager.create_product') }}">
+        <input type="hidden" name="product_brand_id" value="{{ brand.id }}">
+        <label class="field">
+          <span>Name</span>
+          <input name="product_name" placeholder="Product name" required>
+        </label>
+        <label class="field">
+          <span>Category</span>
+          <select name="product_category_id" required>
+            <option value="">Select category</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-soft" type="button" data-modal-close>Cancel</button>
+          <button class="btn btn-primary" type="submit">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" data-modal id="editProductModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <p class="modal-title">Edit product</p>
+          <p class="modal-sub">Update details for this item.</p>
+        </div>
+        <button class="icon-btn" type="button" data-modal-close>&times;</button>
+      </div>
+      <form class="modal-body" method="post" action="{{ url_for('manager.update_product') }}" id="editProductForm">
+        <input type="hidden" name="edit_product_id" id="editProductId">
+        <label class="field">
+          <span>Name</span>
+          <input name="edit_product_name" id="editProductName" required>
+        </label>
+        <label class="field">
+          <span>Brand</span>
+          <select name="edit_product_brand_id" id="editProductBrand">
+            <option value="">No brand</option>
+            {% for b in brands %}
+              <option value="{{ b.id }}" {% if b.id == brand.id %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Category</span>
+          <select name="edit_product_category_id" id="editProductCategory" required>
+            <option value="">Select category</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-soft" type="button" data-modal-close>Cancel</button>
+          <button class="btn btn-primary" type="submit">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" data-modal id="deleteProductModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <p class="modal-title">Delete product</p>
+          <p class="modal-sub">This action cannot be undone.</p>
+        </div>
+        <button class="icon-btn" type="button" data-modal-close>&times;</button>
+      </div>
+      <form class="modal-body" method="post" action="{{ url_for('manager.delete_product') }}">
+        <input type="hidden" name="delete_product_id" id="deleteProductId">
+        <p>Are you sure you want to remove <strong id="deleteProductName"></strong>?</p>
+        <div class="modal-actions">
+          <button class="btn btn-soft" type="button" data-modal-close>Cancel</button>
+          <button class="btn btn-primary" type="submit">Yes, delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modals = document.querySelectorAll('[data-modal]');
+    const openModal = modal => modal && modal.classList.add('show');
+    const closeModal = modal => modal && modal.classList.remove('show');
+
+    document.querySelectorAll('[data-modal-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.closest('[data-modal]')));
+    });
+
+    modals.forEach(backdrop => {
+      backdrop.addEventListener('click', evt => {
+        if (evt.target === backdrop) {
+          closeModal(backdrop);
+        }
+      });
+    });
+
+    const addFab = document.getElementById('addProductFab');
+    const addModal = document.getElementById('addProductModal');
+    if (addFab && addModal) {
+      addFab.addEventListener('click', () => openModal(addModal));
+    }
+
+    const editModal = document.getElementById('editProductModal');
+    const editId = document.getElementById('editProductId');
+    const editName = document.getElementById('editProductName');
+    const editBrand = document.getElementById('editProductBrand');
+    const editCategory = document.getElementById('editProductCategory');
+
+    document.querySelectorAll('[data-edit-product]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!editModal) return;
+        editId.value = btn.dataset.productId || '';
+        editName.value = btn.dataset.productName || '';
+        editBrand.value = btn.dataset.productBrand || '';
+        editCategory.value = btn.dataset.productCategory || '';
+        openModal(editModal);
+      });
+    });
+
+    const deleteModal = document.getElementById('deleteProductModal');
+    const deleteId = document.getElementById('deleteProductId');
+    const deleteName = document.getElementById('deleteProductName');
+
+    document.querySelectorAll('[data-delete-product]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!deleteModal) return;
+        deleteId.value = btn.dataset.productId || '';
+        deleteName.textContent = btn.dataset.productName || '';
+        openModal(deleteModal);
+      });
+    });
+
+  document.addEventListener('keydown', evt => {
+    if (evt.key === 'Escape') {
+      modals.forEach(closeModal);
+    }
+  });
+
+  const brandProductSearch = document.getElementById('brandProductSearch');
+  const brandProductCards = document.querySelectorAll('[data-brand-product]');
+  if (brandProductSearch && brandProductCards.length) {
+    const filterBrandProducts = () => {
+      const term = brandProductSearch.value.trim().toLowerCase();
+      let visible = 0;
+      brandProductCards.forEach(card => {
+        const name = card.dataset.productName || '';
+        const cat = card.dataset.productCategory || '';
+        const matches = !term || name.includes(term) || cat.includes(term);
+        card.classList.toggle('hidden', !matches);
+        if (matches) visible += 1;
+      });
+    };
+    brandProductSearch.addEventListener('input', filterBrandProducts);
+  }
+  </script>
+</body>
+</html>
