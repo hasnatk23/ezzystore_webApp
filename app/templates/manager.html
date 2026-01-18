@@ -230,6 +230,7 @@
     <a href="{{ url_for('manager.stock_page') }}" class="{% if active_page == 'stock' %}active{% endif %}">Stock</a>
     <a href="{{ url_for('manager.sales_page') }}" class="{% if active_page == 'sales' %}active{% endif %}">Sell Product</a>
     <a href="{{ url_for('manager.reports_page') }}" class="{% if active_page == 'reports' %}active{% endif %}">Sales Report</a>
+    <a href="{{ url_for('manager.settings_page') }}" class="{% if active_page == 'settings' %}active{% endif %}">Settings</a>
     <a href="{{ url_for('manager.customers_page') }}" class="{% if active_page == 'customers' %}active{% endif %}">Customer Ledger</a>
   </nav>
 
@@ -1312,6 +1313,11 @@
 
               </label>
 
+              <div class="expense-helper">
+                <span class="pill ok">Expense rate: {{ '%.2f'|format(expense_percent or 0) }}%</span>
+                <span class="muted tiny">Choose “Sell with expense” per item to apply purchase + expense only.</span>
+              </div>
+
               <div id="saleEntryContainer"></div>
 
               <button type="submit" class="btn btn-primary">
@@ -1460,6 +1466,58 @@
           </div>
 
         {% endif %}
+
+      </section>
+
+    </section>
+    {% endif %}
+
+    {% if active_page == 'settings' %}
+    <section class="manager-section" data-fragment="settings" id="settingsSection">
+
+      <div class="card-head">
+
+        <div>
+
+          <h2>Settings</h2>
+
+          <p class="muted">Manage defaults that affect sales calculations.</p>
+
+        </div>
+
+      </div>
+
+      <section class="card form-card">
+
+        <div class="card-head">
+
+          <div>
+
+            <h2>Expense percentage</h2>
+
+            <p class="muted">Used when a product is sold with expense pricing.</p>
+
+          </div>
+
+        </div>
+
+        <form method="post" action="{{ url_for('manager.settings_page') }}">
+
+          <label class="field">
+
+            <span>Expense percentage (%)</span>
+
+            <input type="number" step="0.01" min="0" max="100" name="expense_percent" value="{{ '%.2f'|format(expense_percent or 0) }}" required>
+
+          </label>
+
+          <div class="modal-actions">
+
+            <button class="btn btn-primary" type="submit">Save settings</button>
+
+          </div>
+
+        </form>
 
       </section>
 
@@ -2028,6 +2086,7 @@
         {% for p in products %}
 
           {% set default_sale = product_sale_defaults.get(p.id) if product_sale_defaults else None %}
+          {% set latest_purchase = product_latest.get(p.id) if product_latest else None %}
 
           <label class="checkbox-card" data-sale-product-name="{{ p.name | lower }}">
 
@@ -2036,8 +2095,8 @@
                    value="{{ p.id }}"
 
                    data-product-name="{{ p.name }}"
-
-                   data-sale-price="{{ default_sale if default_sale is not none else '%.2f'|format(p.price) }}">
+                   data-sale-price="{{ default_sale if default_sale is not none else '%.2f'|format(p.price) }}"
+                   data-purchase-rate="{{ latest_purchase.purchase_rate if latest_purchase else '' }}">
 
             <div>
 
@@ -3115,6 +3174,21 @@
   const customerCreatePhone = document.getElementById("customerCreatePhone");
   const customerCreateForm = document.getElementById("customerCreateForm");
   const saleDraftKey = "ezzystore.saleDraft";
+  const expensePercent = Number({{ expense_percent|default(0)|tojson }}) || 0;
+
+  const getExpensePrice = (purchaseRate)=>{
+    if(purchaseRate === "" || purchaseRate === null || purchaseRate === undefined){
+      return "";
+    }
+    const base = Number(purchaseRate);
+    if(!Number.isFinite(base)){
+      return "";
+    }
+    if(expensePercent <= 0){
+      return base.toFixed(2);
+    }
+    return (base * (1 + (expensePercent / 100))).toFixed(2);
+  };
 
 
 
@@ -3144,7 +3218,9 @@
 
         const price = entry.querySelector("input[name='sale_price[]']")?.value || "";
 
-        entries.push({ id, quantity, price });
+        const expense = entry.querySelector("input[name='sale_expense[]']")?.value || "0";
+
+        entries.push({ id, quantity, price, expense });
 
       });
 
@@ -3264,6 +3340,19 @@
 
         }
 
+        const expenseToggle = entry.querySelector("[data-expense-toggle]");
+        const expenseFlag = entry.querySelector("input[name='sale_expense[]']");
+        const useExpense = String(data.expense || "0") === "1";
+        if(expenseFlag){
+          expenseFlag.value = useExpense ? "1" : "0";
+        }
+        if(expenseToggle){
+          expenseToggle.checked = useExpense;
+          if(useExpense){
+            expenseToggle.dispatchEvent(new Event("change"));
+          }
+        }
+
       });
 
     }else if(saleSelectionHint){
@@ -3298,11 +3387,10 @@
 
   };
 
-
-
   const buildSaleRow = (productId, productName, defaults = {})=>{
 
-    const priceDefault = defaults.salePrice || "";
+    const salePriceDefault = defaults.salePrice || "";
+    const purchaseRate = defaults.purchaseRate || "";
 
     const wrapper = document.createElement("div");
 
@@ -3332,13 +3420,61 @@
 
           <span>Sale price (PKR)</span>
 
-          <input type="number" step="0.01" min="0" name="sale_price[]" required placeholder="0.00" value="${priceDefault}">
+          <input type="number" step="0.01" min="0" name="sale_price[]" required placeholder="0.00" value="${salePriceDefault}">
+
+        </label>
+
+      </div>
+
+      <div class="batch-entry-foot">
+
+        <input type="hidden" name="sale_expense[]" value="0" data-expense-flag>
+
+        <label class="expense-toggle">
+
+          <input type="checkbox" data-expense-toggle>
+
+          <span>Sell with expense (no profit)</span>
 
         </label>
 
       </div>
 
     `;
+
+    const priceInput = wrapper.querySelector("input[name='sale_price[]']");
+    const expenseFlag = wrapper.querySelector("[data-expense-flag]");
+    const expenseToggle = wrapper.querySelector("[data-expense-toggle]");
+
+    const applyExpenseToggle = (enabled)=>{
+      if(!priceInput || !expenseFlag || !expenseToggle){
+        return;
+      }
+      if(enabled){
+        const purchase = Number(purchaseRate);
+        if(!Number.isFinite(purchase)){
+          alert("This product has no purchase rate yet. Add a restock purchase price first.");
+          expenseToggle.checked = false;
+          expenseFlag.value = "0";
+          return;
+        }
+        priceInput.dataset.prevPrice = priceInput.value || salePriceDefault || "";
+        priceInput.value = getExpensePrice(purchase);
+        priceInput.readOnly = true;
+        priceInput.classList.add("is-locked");
+        expenseFlag.value = "1";
+      }else{
+        const restore = priceInput.dataset.prevPrice || salePriceDefault || "";
+        priceInput.value = restore;
+        priceInput.readOnly = false;
+        priceInput.classList.remove("is-locked");
+        expenseFlag.value = "0";
+      }
+    };
+
+    expenseToggle?.addEventListener("change", ()=>{
+      applyExpenseToggle(expenseToggle.checked);
+    });
 
     return wrapper;
 
@@ -3393,6 +3529,7 @@
         const defaults = {
 
           salePrice: input.dataset.salePrice || "",
+          purchaseRate: input.dataset.purchaseRate || "",
 
         };
 

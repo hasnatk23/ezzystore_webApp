@@ -812,6 +812,29 @@ body{
   border:1px solid var(--border);
   font-size:14px;
 }
+.batch-entry-foot{
+  margin-top:10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.expense-toggle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.expense-toggle input{
+  accent-color:var(--accent);
+}
+.is-locked{
+  background:rgba(255,255,255,.06);
+  color:var(--muted);
+}
 .muted.mini{
   font-size:13px;
 }
@@ -1050,6 +1073,13 @@ body{
 }
 .customer-helper{
   margin-top:8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.expense-helper{
+  margin:10px 0 6px;
   display:flex;
   align-items:center;
   gap:10px;

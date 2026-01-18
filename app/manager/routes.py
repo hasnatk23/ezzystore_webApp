@@ -10,6 +10,7 @@ from ..models.category import Category
 from ..models.stock_batch import StockBatch
 from ..models.sale import Sale
 from ..models.customer import Customer
+from ..models.shop_settings import ShopSettings
 
 manager_bp = Blueprint("manager", __name__)
 
@@ -43,6 +44,7 @@ def _url_for_page(page: str | None):
         "customers": "manager.customers_page",
         "brands": "manager.brands_page",
         "categories": "manager.categories_page",
+        "settings": "manager.settings_page",
     }
     if page in mapping:
         return url_for(mapping[page])
@@ -116,7 +118,7 @@ def _build_manager_context(db, shop, active_page: str):
                     "purchase_rate": batch["purchase_rate"],
                 }
             )
-    for batch in reversed(stock_batches):
+    for batch in stock_batches:
         pid = batch["product_id"]
         if pid not in product_sale_defaults:
             product_sale_defaults[pid] = batch["sale_price"]
@@ -127,6 +129,8 @@ def _build_manager_context(db, shop, active_page: str):
     )
     today = date.today()
     today_iso = today.isoformat()
+    shop_settings = ShopSettings.get_for_shop(db, shop["id"])
+    expense_percent = shop_settings["expense_percent"] if shop_settings else 0
 
     report_start_iso = today_iso
     report_end_iso = today_iso
@@ -241,6 +245,7 @@ def _build_manager_context(db, shop, active_page: str):
         "total_stock": total_stock,
         "out_of_stock": out_of_stock,
         "active_page": active_page,
+        "expense_percent": expense_percent,
     }
 
 
@@ -589,6 +594,7 @@ def record_sale():
     product_ids = request.form.getlist("sale_product_id[]")
     quantities = request.form.getlist("sale_quantity[]")
     prices = request.form.getlist("sale_price[]")
+    expense_flags = request.form.getlist("sale_expense[]")
     customer_id_raw = request.form.get("sale_customer_id")
 
     if not product_ids:
@@ -603,6 +609,19 @@ def record_sale():
     if not shop:
         flash("No shop assigned.", "error")
         return redirect(url_for("auth.logout"))
+
+    if expense_flags and len(expense_flags) != len(product_ids):
+        flash("Missing expense selection for one of the products.", "error")
+        return _redirect_to_page("sales")
+
+    if not expense_flags:
+        expense_flags = ["0"] * len(product_ids)
+
+    expense_percent = 0.0
+    if sale_type == "sale":
+        settings = ShopSettings.get_for_shop(db, shop["id"])
+        if settings:
+            expense_percent = float(settings["expense_percent"] or 0)
 
     entries = []
     customer_id = None
@@ -625,10 +644,6 @@ def record_sale():
         if quantity <= 0:
             flash("Quantity must be greater than zero.", "error")
             return _redirect_to_page("sales")
-        price = parse_float(prices[idx], "sale price")
-        if price is None:
-            return _redirect_to_page("sales")
-
         product = Product.get_for_shop(db, shop["id"], pid)
         if not product:
             flash("Product not found.", "error")
@@ -636,6 +651,19 @@ def record_sale():
         if sale_type == "sale" and product["quantity"] < quantity:
             flash(f"Not enough stock for {product['name']}.", "error")
             return _redirect_to_page("sales")
+
+        use_expense = sale_type == "sale" and expense_flags[idx] == "1"
+        if use_expense:
+            latest_batch = StockBatch.latest_for_product(db, shop["id"], pid)
+            if not latest_batch:
+                flash(f"Add a restock purchase price for {product['name']} before using expense pricing.", "error")
+                return _redirect_to_page("sales")
+            purchase_rate = float(latest_batch["purchase_rate"] or 0)
+            price = round(purchase_rate * (1 + (expense_percent / 100)), 2)
+        else:
+            price = parse_float(prices[idx], "sale price")
+            if price is None:
+                return _redirect_to_page("sales")
 
         entries.append(
             {
@@ -673,6 +701,33 @@ def record_sale():
         flash("Failed to record sale/return.", "error")
 
     return _redirect_to_page("sales")
+
+
+@manager_bp.route("/settings", methods=["GET", "POST"])
+@manager_required
+def settings_page():
+    db = get_db()
+    shop = _get_manager_shop(db)
+    if not shop:
+        flash("No shop assigned to this manager account.", "error")
+        return redirect(url_for("auth.logout"))
+
+    if request.method == "POST":
+        raw_percent = request.form.get("expense_percent", "").strip()
+        try:
+            expense_percent = float(raw_percent)
+            if expense_percent < 0:
+                raise ValueError
+        except ValueError:
+            flash("Enter a valid expense percentage.", "error")
+            return redirect(url_for("manager.settings_page"))
+        ShopSettings.set_expense_percent(db, shop["id"], expense_percent)
+        db.commit()
+        flash("Settings updated.", "success")
+        return redirect(url_for("manager.settings_page"))
+
+    ctx = _build_manager_context(db, shop, "settings")
+    return render_template("manager.html", **ctx)
 
 
 @manager_bp.route("/sales/<int:sale_id>/return", methods=["POST"])

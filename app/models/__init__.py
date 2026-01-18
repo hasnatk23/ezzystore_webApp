@@ -5,6 +5,7 @@ from .product import Product
 from .stock_batch import StockBatch
 from .sale import Sale
 from .customer import Customer
+from .shop_settings import ShopSettings
 
 def init_models(db):
     User.create_table(db)
@@ -38,5 +39,6 @@ def init_models(db):
     StockBatch.create_table(db)
     Customer.create_table(db)
     Sale.create_table(db)
+    ShopSettings.create_table(db)
 
     User.ensure_default_admin(db)
