@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 </head>
 <body class="admin-body">
@@ -115,7 +116,7 @@
                 {% else %}
                   <p class="muted">Awaiting manager assignment</p>
                 {% endif %}
-                <span class="timeline-date">{{ s.created_at }}</span>
+                <span class="timeline-date">{{ s.created_at|human_datetime }}</span>
               </div>
             </li>
           {% endfor %}
@@ -157,7 +158,7 @@
               <td>
                 <div class="shopcell">
                   <div class="shopname">{{ s.name }}</div>
-                  <div class="shopsub">Created: {{ s.created_at }}</div>
+                  <div class="shopsub">Created: {{ s.created_at|human_datetime }}</div>
                 </div>
               </td>
 

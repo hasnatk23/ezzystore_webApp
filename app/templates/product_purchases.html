@@ -78,7 +78,7 @@
                 {% for entry in entries %}
                   <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ entry.batch_date }}</td>
+                    <td>{{ entry.batch_date|human_date }}</td>
                     <td>{{ entry.quantity }} units</td>
                     <td>PKR {{ '%.2f'|format(entry.purchase_rate) }}</td>
                     <td>PKR {{ '%.2f'|format(entry.quantity * entry.purchase_rate) }}</td>

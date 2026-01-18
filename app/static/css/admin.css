@@ -1,12 +1,13 @@
 :root{
-  --orange:#f97316;
-  --orange-dark:#ea580c;
-  --bg:#f9fafb;
-  --card:#ffffff;
-  --text:#0f172a;
-  --muted:#6b7280;
-  --border:#e5e7eb;
-  --shadow:0 24px 60px rgba(15,23,42,.12);
+  --primary:#0b132b;
+  --secondary:#0f1f3d;
+  --accent:#0ea5e9;
+  --accent-2:#10b981;
+  --muted:#7c8aa3;
+  --card:#0f1f3d;
+  --surface:#111a30;
+  --border:rgba(255,255,255,.12);
+  --shadow:0 28px 70px rgba(6,10,24,.32);
   --radius:24px;
 }
 
@@ -16,10 +17,10 @@ body{
   margin:0;
   font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
   background:
-    radial-gradient(900px 420px at 15% 0, rgba(249,115,22,.18), transparent 55%),
-    radial-gradient(700px 420px at 85% 0, rgba(251,146,60,.14), transparent 55%),
-    linear-gradient(180deg,#fff 0%,var(--bg) 100%);
-  color:var(--text);
+    radial-gradient(960px 520px at 12% 0, rgba(14,165,233,.22), transparent 60%),
+    radial-gradient(900px 520px at 88% 0, rgba(16,185,129,.18), transparent 60%),
+    linear-gradient(180deg,#0b132b 0%, #0f172a 65%, #0b132b 100%);
+  color:#e8ecf5;
   min-height:100vh;
 }
 
@@ -38,7 +39,7 @@ body{
 }
 
 .admin-hero{
-  background:var(--card);
+  background:linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
   border-radius:var(--radius);
   padding:32px;
   display:flex;
@@ -46,7 +47,7 @@ body{
   gap:24px;
   justify-content:space-between;
   align-items:center;
-  border:1px solid rgba(255,255,255,.4);
+  border:1px solid var(--border);
   box-shadow:var(--shadow);
   position:relative;
   overflow:hidden;
@@ -56,9 +57,9 @@ body{
   position:absolute;
   inset:0;
   background:
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,.4), transparent 55%),
-    radial-gradient(circle at 80% 0%, rgba(249,115,22,.2), transparent 45%);
-  opacity:.6;
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.14), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(14,165,233,.20), transparent 45%);
+  opacity:.7;
   pointer-events:none;
 }
 
@@ -74,11 +75,11 @@ body{
   width:96px;
   height:96px;
   border-radius:28px;
-  background:linear-gradient(135deg,var(--orange),var(--orange-dark));
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
   display:flex;
   align-items:center;
   justify-content:center;
-  box-shadow:0 20px 40px rgba(249,115,22,.35);
+  box-shadow:0 20px 40px rgba(14,165,233,.35);
 }
 .hero-logo img{
   width:58px;
@@ -92,14 +93,14 @@ body{
   letter-spacing:0.2em;
   font-size:11px;
   font-weight:800;
-  color:var(--orange-dark);
+  color:var(--accent);
   margin:0 0 6px;
 }
 .hero-brand h1{
   margin:0;
   font-size:34px;
   font-weight:900;
-  color:var(--text);
+  color:#f8fafc;
 }
 .hero-brand p{
   margin:6px 0 0;
@@ -237,7 +238,7 @@ body{
   color:#94a3b8;
 }
 .table tbody tr:hover{
-  background:rgba(249,115,22,.05);
+  background:rgba(14,165,233,.08);
 }
 
 .shopcell{
@@ -266,8 +267,8 @@ body{
   align-items:center;
   padding:4px 10px;
   border-radius:999px;
-  background:rgba(249,115,22,.12);
-  color:var(--orange-dark);
+  background:rgba(14,165,233,.16);
+  color:#e0f2fe;
   font-weight:800;
   font-size:13px;
 }
@@ -278,9 +279,9 @@ body{
   border-radius:999px;
   font-size:13px;
   font-weight:800;
-  border:1px solid rgba(34,197,94,.2);
-  background:rgba(236,253,245,.9);
-  color:#065f46;
+  border:1px solid rgba(16,185,129,.25);
+  background:rgba(16,185,129,.12);
+  color:#d1fae5;
 }
 
 .btn{
@@ -298,21 +299,22 @@ body{
   font-size:16px;
 }
 .btn-primary{
-  background:linear-gradient(135deg,var(--orange),var(--orange-dark));
-  color:#fff;
-  box-shadow:0 20px 40px rgba(249,115,22,.35);
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  color:#f8fafc;
+  box-shadow:0 20px 40px rgba(14,165,233,.35);
 }
 .btn-secondary{
-  background:rgba(15,23,42,.06);
-  color:var(--text);
+  background:rgba(255,255,255,.08);
+  color:#e8ecf5;
+  border:1px solid var(--border);
 }
 .btn-mini{
   padding:10px 14px;
   border-radius:12px;
 }
 .btn-ghost{
-  background:transparent;
-  color:var(--text);
+  background:rgba(255,255,255,.06);
+  color:#e8ecf5;
   border:1px solid var(--border);
 }
 .btn-secondary:disabled{
@@ -324,8 +326,8 @@ a.btn{
   text-decoration:none;
 }
 .btn-soft{
-  background:rgba(15,23,42,.05);
-  color:var(--text);
+  background:rgba(14,165,233,.12);
+  color:#e8ecf5;
 }
 
 .alerts{
@@ -340,18 +342,19 @@ a.btn{
   padding:12px 14px;
   border-radius:14px;
   border:1px solid var(--border);
-  background:#fff;
+  background:rgba(255,255,255,.06);
   font-weight:600;
+  color:#e8ecf5;
 }
 .toast.success{
-  border-color:#bbf7d0;
-  background:#ecfdf5;
-  color:#047857;
+  border-color:rgba(16,185,129,.32);
+  background:rgba(16,185,129,.14);
+  color:#d1fae5;
 }
 .toast.error{
-  border-color:#fecaca;
-  background:#fef2f2;
-  color:#b91c1c;
+  border-color:rgba(239,68,68,.32);
+  background:rgba(239,68,68,.14);
+  color:#fecdd3;
 }
 .toast-ic{
   font-weight:900;
@@ -371,7 +374,7 @@ a.btn{
   display:grid;
   place-items:center;
   margin:0 auto 12px;
-  background:rgba(249,115,22,.12);
+  background:rgba(14,165,233,.18);
   font-size:28px;
 }
 .empty h3{
@@ -392,7 +395,7 @@ a.btn{
 .modal-backdrop.show{ display:flex; }
 .modal{
   width:min(460px,100%);
-  background:#fff;
+  background:var(--card);
   border-radius:20px;
   border:1px solid var(--border);
   box-shadow:var(--shadow);
@@ -435,7 +438,7 @@ a.btn{
   letter-spacing:.08em;
   font-weight:800;
   margin-bottom:6px;
-  color:#475569;
+  color:rgba(232,236,245,.82);
 }
 .field input{
   width:100%;
@@ -443,13 +446,15 @@ a.btn{
   border-radius:12px;
   border:1px solid var(--border);
   font-size:14px;
+  background:rgba(255,255,255,.06);
+  color:var(--text);
 }
 .info-box{
   padding:12px 14px;
   border-radius:12px;
-  border:1px solid rgba(249,115,22,.3);
-  background:rgba(255,237,213,.7);
-  color:#9a3412;
+  border:1px solid rgba(14,165,233,.35);
+  background:rgba(14,165,233,.18);
+  color:#e8ecf5;
   font-weight:700;
 }
 .modal-actions{

@@ -10,6 +10,7 @@ class Product:
           name        TEXT NOT NULL,
           price       REAL NOT NULL DEFAULT 0 CHECK(price >= 0),
           quantity    INTEGER NOT NULL DEFAULT 0 CHECK(quantity >= 0),
+          reorder_level INTEGER NOT NULL DEFAULT 3 CHECK(reorder_level >= 0),
           created_at  TEXT NOT NULL DEFAULT (datetime('now')),
           FOREIGN KEY (shop_id)     REFERENCES shops(id) ON DELETE CASCADE,
           FOREIGN KEY (brand_id)    REFERENCES brands(id) ON DELETE SET NULL,
@@ -23,6 +24,7 @@ class Product:
             "ALTER TABLE products ADD COLUMN category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL;",
             "ALTER TABLE products ADD COLUMN price REAL NOT NULL DEFAULT 0;",
             "ALTER TABLE products ADD COLUMN quantity INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE products ADD COLUMN reorder_level INTEGER NOT NULL DEFAULT 3;",
         ]:
             try:
                 db.execute(sql)
@@ -30,19 +32,19 @@ class Product:
                 pass
 
     @staticmethod
-    def create(db, shop_id: int, name: str, price: float, brand_id=None, category_id=None):
+    def create(db, shop_id: int, name: str, price: float, brand_id=None, category_id=None, reorder_level: int = 3):
         db.execute("""
-            INSERT INTO products (shop_id, brand_id, category_id, name, price)
-            VALUES (?, ?, ?, ?, ?);
-        """, (shop_id, brand_id, category_id, name.strip(), price))
+            INSERT INTO products (shop_id, brand_id, category_id, name, price, reorder_level)
+            VALUES (?, ?, ?, ?, ?, ?);
+        """, (shop_id, brand_id, category_id, name.strip(), price, reorder_level))
 
     @staticmethod
-    def update(db, shop_id: int, product_id: int, *, name: str, price: float, brand_id=None, category_id=None):
+    def update(db, shop_id: int, product_id: int, *, name: str, price: float, brand_id=None, category_id=None, reorder_level: int | None = None):
         db.execute("""
             UPDATE products
-            SET name=?, price=?, brand_id=?, category_id=?
+            SET name=?, price=?, brand_id=?, category_id=?, reorder_level=COALESCE(?, reorder_level)
             WHERE id=? AND shop_id=?;
-        """, (name.strip(), price, brand_id, category_id, product_id, shop_id))
+        """, (name.strip(), price, brand_id, category_id, reorder_level, product_id, shop_id))
 
     @staticmethod
     def add_stock(db, product_id: int, quantity: int, price: float | None = None):

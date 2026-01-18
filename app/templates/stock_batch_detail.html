@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ shop.name }} &middot; Restock {{ batch_date }}</title>
+  <title>{{ shop.name }} &middot; Restock {{ batch_date|human_date }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -11,25 +11,13 @@
 </head>
 <body class="category-detail-body">
   <main class="category-detail-main">
-    <header class="category-detail-hero">
-      <div>
-        <p class="eyebrow">Restock run</p>
-        <h1>{{ batch_date }}</h1>
-        <p class="muted">{{ entries|length }} product{{ '' if entries|length == 1 else 's' }} · Total purchase PKR {{ '%.2f'|format(total_purchase) }}</p>
-      </div>
-      <div class="detail-actions">
-        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}" target="_blank" rel="noopener">Open Dashboard</a>
-        <a class="btn btn-secondary" href="{{ url_for('manager.dashboard') }}">Back to manager</a>
-      </div>
-    </header>
-
     {% set total_items = entries|length %}
 
     <section class="category-detail-card info-card">
       <div class="category-detail-info">
         <div>
           <h2>Restock metrics</h2>
-          <p class="muted">Snapshot for the {{ batch_date }} restock run.</p>
+          <p class="muted">Snapshot for the {{ batch_date|human_date }} restock run.</p>
         </div>
       </div>
       <div class="category-detail-stats">
@@ -43,11 +31,6 @@
           <p class="stat">PKR {{ '%.2f'|format(total_purchase) }}</p>
           <p class="muted mini">Sum of quantity × rate</p>
         </article>
-        <article>
-          <p class="muted tiny">Projected sale</p>
-          <p class="stat">PKR {{ '%.2f'|format(total_sale) }}</p>
-          <p class="muted mini">Based on configured sale price</p>
-        </article>
       </div>
     </section>
 
@@ -55,7 +38,7 @@
       <div class="card-head">
         <div>
           <h2>Restock details</h2>
-          <p class="muted">Line-by-line summary of items added on {{ batch_date }}.</p>
+          <p class="muted">Line-by-line summary of items added on {{ batch_date|human_date }}.</p>
         </div>
         <div class="category-detail-filter">
           <label>
@@ -88,7 +71,7 @@
                   <td>PKR {{ '%.2f'|format(entry.purchase_rate) }}</td>
                   <td>PKR {{ '%.2f'|format(entry.quantity * entry.purchase_rate) }}</td>
                   <td>PKR {{ '%.2f'|format(entry.sale_price) }}</td>
-                  <td>{{ entry.created_at }}</td>
+                  <td>{{ entry.created_at|human_datetime }}</td>
                 </tr>
               {% endfor %}
             </tbody>

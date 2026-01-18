@@ -18,7 +18,7 @@
         <p class="muted">Part of {{ shop.name }} &middot; {{ products|length }} product{{ '' if products|length == 1 else 's' }}</p>
       </div>
       <div class="detail-actions">
-        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}" target="_blank" rel="noopener">Open Dashboard</a>
+        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}">Open Dashboard</a>
         <a class="btn btn-secondary" href="{{ url_for('manager.dashboard') }}">Back to manager</a>
       </div>
     </header>
@@ -104,14 +104,6 @@
                       <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm13.71-9.04 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z" fill="currentColor"/>
                     </svg>
                   </button>
-                  <button class="icon-btn icon-delete" type="button" aria-label="Delete {{ p.name }}"
-                          data-delete-product
-                          data-product-id="{{ p.id }}"
-                          data-product-name="{{ p.name }}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2zm2 5v8h2V9h-2z" fill="currentColor"/>
-                    </svg>
-                  </button>
                 </div>
               </div>
               <div class="product-tile-meta">
@@ -133,7 +125,7 @@
                 </div>
                 <div class="product-mini-card">
                   <p class="mini-label">Added</p>
-                  <p class="mini-value">{{ p.created_at }}</p>
+                  <p class="mini-value">{{ p.created_at|human_datetime }}</p>
                 </div>
               </div>
             </article>
@@ -164,6 +156,10 @@
         <label class="field">
           <span>Name</span>
           <input name="product_name" placeholder="Product name" required>
+        </label>
+        <label class="field">
+          <span>Minimum stock to maintain</span>
+          <input name="product_reorder_level" type="number" min="0" value="3" required>
         </label>
         <label class="field">
           <span>Brand</span>
@@ -223,26 +219,6 @@
     </div>
   </div>
 
-  <div class="modal-backdrop" data-modal id="deleteProductModal">
-    <div class="modal">
-      <div class="modal-head">
-        <div>
-          <p class="modal-title">Delete product</p>
-          <p class="modal-sub">This action cannot be undone.</p>
-        </div>
-        <button class="icon-btn" type="button" data-modal-close>&times;</button>
-      </div>
-      <form class="modal-body" method="post" action="{{ url_for('manager.delete_product') }}">
-        <input type="hidden" name="delete_product_id" id="deleteProductId">
-        <p>Are you sure you want to remove <strong id="deleteProductName"></strong>+</p>
-        <div class="modal-actions">
-          <button class="btn btn-soft" type="button" data-modal-close>Cancel</button>
-          <button class="btn btn-primary" type="submit">Yes, delete</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script>
     const modals = document.querySelectorAll('[data-modal]');
     const openModal = modal => modal && modal.classList.add('show');
@@ -280,19 +256,6 @@
         editBrand.value = btn.dataset.productBrand || '';
         editCategory.value = btn.dataset.productCategory || '';
         openModal(editModal);
-      });
-    });
-
-    const deleteModal = document.getElementById('deleteProductModal');
-    const deleteId = document.getElementById('deleteProductId');
-    const deleteName = document.getElementById('deleteProductName');
-
-    document.querySelectorAll('[data-delete-product]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!deleteModal) return;
-        deleteId.value = btn.dataset.productId || '';
-        deleteName.textContent = btn.dataset.productName || '';
-        openModal(deleteModal);
       });
     });
 
