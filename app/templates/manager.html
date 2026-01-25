@@ -557,195 +557,97 @@
 
           </p>
 
-          <div class="product-grid manage-product-grid" id="productGrid">
+          <div class="table-card manage-products-table">
+            <div class="table-shell">
+              <table class="table product-table">
+                <thead>
+                  <tr>
+                    <th>Sr.</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Brand</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th class="table-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="productGrid">
+                  {% for p in products %}
 
-            {% for p in products %}
+                  {% set reorder_level = p.reorder_level or 3 %}
 
-          {% set reorder_level = p.reorder_level or 3 %}
+                  {% set stock_state = 'ok' %}
 
-          {% set stock_state = 'ok' %}
+                  {% set stock_label = 'Healthy stock' %}
 
-          {% set stock_label = 'Healthy stock' %}
+                  {% if p.quantity <= reorder_level %}
 
-          {% if p.quantity <= reorder_level %}
+                    {% set stock_state = 'out' %}
 
-            {% set stock_state = 'out' %}
+                    {% set stock_label = 'Out of stock' %}
 
-            {% set stock_label = 'Out of stock' %}
+                  {% elif p.quantity <= reorder_level + 2 %}
 
-          {% elif p.quantity <= reorder_level + 2 %}
+                    {% set stock_state = 'low' %}
 
-            {% set stock_state = 'low' %}
+                    {% set stock_label = 'Low stock' %}
 
-            {% set stock_label = 'Low stock' %}
+                  {% endif %}
 
-          {% endif %}
-
-              {% set purchase_summary = product_purchase_summary.get(p.id) %}
-
-              {% set purchase_previews = product_purchase_previews.get(p.id, []) %}
-
-              <article
-
-                class="product-card product-card-tile manage-product-card"
-
-                data-product-card
-
-                data-product-name="{{ p.name | lower }}"
-
-                data-product-category="{{ p.category_id if p.category_id is not none else 'none' }}"
-
-                data-product-brand="{{ p.brand_id if p.brand_id is not none else 'none' }}"
-
-                data-product-reorder="{{ reorder_level }}"
-
-                data-product-stock="{{ stock_state }}">
-
-                <div class="product-card-head">
-
-                  <div>
-
-                    <h3>{{ p.name }}</h3>
-
-                    <p class="muted">{{ p.category_name or 'Uncategorized' }}</p>
-
-                  </div>
-
-                  <span class="product-stock-badge {{ stock_state }}">{{ stock_label }}</span>
-
-                  <div class="tile-actions">
-
-                    <button class="icon-btn icon-edit" type="button" aria-label="Edit {{ p.name }}"
-
-                            data-edit-product
-
-                            data-product-id="{{ p.id }}"
-
-                            data-product-name="{{ p.name }}"
-
-                            data-product-brand="{{ p.brand_id or '' }}"
-
-                            data-product-category="{{ p.category_id or '' }}"
-
-                            data-product-reorder="{{ reorder_level }}">
-
-                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm13.71-9.04 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z" fill="currentColor"/>
-
-                      </svg>
-
-                    </button>
-
-                  </div>
-
-                </div>
-
-                <div class="product-tile-meta">
-
-                  <div class="product-mini-card">
-
-                    <p class="mini-label">Brand</p>
-
-                    <p class="mini-value">{{ p.brand_name or 'No brand' }}</p>
-
-                  </div>
-
-                  <div class="product-mini-card">
-
-                    <p class="mini-label">Price</p>
-
-                    <p class="mini-value">PKR {{ '%.2f'|format(p.price) }}</p>
-
-                  </div>
-
-                  <div class="product-mini-card">
-
-                    <p class="mini-label">Quantity</p>
-
-                    <p class="mini-value">
-
+                  <tr
+                    class="manage-product-row"
+                    data-product-card
+                    data-product-name="{{ p.name | lower }}"
+                    data-product-category="{{ p.category_id if p.category_id is not none else 'none' }}"
+                    data-product-brand="{{ p.brand_id if p.brand_id is not none else 'none' }}"
+                    data-product-reorder="{{ reorder_level }}"
+                    data-product-stock="{{ stock_state }}">
+                    <td class="product-sr-cell">
+                      {{ loop.index }}
+                    </td>
+                    <td class="product-name-cell">
+                      <div class="product-name">
+                        <strong>{{ p.name }}</strong>
+                      </div>
+                    </td>
+                    <td>{{ p.category_name or 'Uncategorized' }}</td>
+                    <td>{{ p.brand_name or 'No brand' }}</td>
+                    <td>PKR {{ '%.2f'|format(p.price) }}</td>
+                    <td>
                       <span class="pill
-
                         {% if p.quantity == 0 %}warn
-
                         {% elif p.quantity <= 5 %}low
-
                         {% else %}ok
-
                         {% endif %}">
-
                         {{ p.quantity }} units
-
-                    </span>
-
-                  </p>
-
-                </div>
-
-                  <div class="product-mini-card">
-
-                    <p class="mini-label">Restocks</p>
-
-                    <p class="mini-value">
-
-                      {{ purchase_summary["total_quantity"] if purchase_summary else 0 }} units ·
-
-                      {{ purchase_summary["total_batches"] if purchase_summary else 0 }} restock{{ '' if purchase_summary and purchase_summary["total_batches"] == 1 else 's' }}
-
-                    </p>
-
-                    <p class="mini-label muted">
-
-                      Spend: PKR {{ '%.2f'|format(purchase_summary["total_spend"]) if purchase_summary else '0.00' }}
-
-                    </p>
-
-                  </div>
-
-                  <div class="product-mini-card">
-
-                    <p class="mini-label">Last restock</p>
-
-                    {% set last_preview = purchase_previews[0] if purchase_previews else None %}
-
-                    <p class="mini-value">
-
-                      {{ last_preview.batch_date|human_date if last_preview else 'No history' }}
-
-                    </p>
-
-                    {% if last_preview %}
-
-                      <p class="mini-label muted">
-
-                        {{ last_preview.quantity }} @ PKR {{ '%.2f'|format(last_preview.purchase_rate) }}
-
-                      </p>
-
-                    {% endif %}
-
-                  </div>
-
-                </div>
-
-                <div class="product-card-foot">
-
-                  <a class="btn btn-secondary btn-mini" href="{{ url_for('manager.product_purchases', product_id=p.id) }}">
-
-                    View restocks
-
-                  </a>
-
-                </div>
-
-              </article>
-
-            {% endfor %}
-
+                      </span>
+                    </td>
+                    <td class="table-actions">
+                      <div class="row-actions">
+                        <button class="icon-btn icon-edit" type="button" aria-label="Edit {{ p.name }}"
+                                data-edit-product
+                                data-product-id="{{ p.id }}"
+                                data-product-name="{{ p.name }}"
+                                data-product-brand="{{ p.brand_id or '' }}"
+                                data-product-category="{{ p.category_id or '' }}"
+                                data-product-reorder="{{ reorder_level }}">
+                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm13.71-9.04 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z" fill="currentColor"/>
+                          </svg>
+                        </button>
+                        <a class="btn btn-secondary btn-mini" href="{{ url_for('manager.product_purchases', product_id=p.id) }}">
+                          View restocks
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div class="table-pagination" id="productPagination" hidden>
+                    <div class="table-pagination" id="productPagination" hidden>
             <button class="btn btn-soft btn-mini" type="button" id="productPrevBtn">Previous</button>
             <span class="muted tiny" id="productPageMeta"></span>
             <button class="btn btn-soft btn-mini" type="button" id="productNextBtn">Next</button>

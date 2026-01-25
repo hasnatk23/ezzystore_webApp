@@ -372,10 +372,26 @@ def create_product():
     brand_id_raw = request.form.get("product_brand_id")
     category_id_raw = request.form.get("product_category_id")
     reorder_level_raw = request.form.get("product_reorder_level", "3")
+    return_to = request.form.get("return_to", "").strip().lower()
+
+    def _redirect_after():
+        if return_to.startswith("brand:"):
+            try:
+                brand_id = int(return_to.split(":", 1)[1])
+            except (TypeError, ValueError, IndexError):
+                return _redirect_to_page("products")
+            return redirect(url_for("manager.brand_detail", brand_id=brand_id))
+        if return_to.startswith("category:"):
+            try:
+                category_id = int(return_to.split(":", 1)[1])
+            except (TypeError, ValueError, IndexError):
+                return _redirect_to_page("products")
+            return redirect(url_for("manager.category_detail", category_id=category_id))
+        return _redirect_to_page("products")
 
     if not name:
         flash("Product name is required.", "error")
-        return _redirect_to_page("products")
+        return _redirect_after()
 
     db = get_db()
     shop = _get_manager_shop(db)
@@ -394,7 +410,7 @@ def create_product():
         brand = Brand.get_by_id(db, shop["id"], brand_id)
         if not brand:
             flash("Invalid brand selected.", "error")
-            return _redirect_to_page("products")
+            return _redirect_after()
 
     category_id = None
     if category_id_raw:
@@ -407,10 +423,10 @@ def create_product():
         category = Category.get_by_id(db, shop["id"], category_id)
         if not category:
             flash("Invalid category selected.", "error")
-            return _redirect_to_page("products")
+            return _redirect_after()
     else:
         flash("Please select a category.", "error")
-        return _redirect_to_page("products")
+        return _redirect_after()
 
     try:
         reorder_level = int(reorder_level_raw)
@@ -418,7 +434,7 @@ def create_product():
             raise ValueError
     except (TypeError, ValueError):
         flash("Enter a valid minimum stock level (0 or above).", "error")
-        return _redirect_to_page("products")
+        return _redirect_after()
 
     try:
         Product.create(db, shop["id"], name, 0.0, brand_id, category_id, reorder_level)
@@ -428,7 +444,7 @@ def create_product():
         db.rollback()
         flash("This SKU already exists for your shop.", "error")
 
-    return _redirect_to_page("products")
+    return _redirect_after()
 
 
 @manager_bp.route("/products/add_stock", methods=["POST"])
@@ -914,16 +930,32 @@ def update_product():
     brand_id_raw = request.form.get("edit_product_brand_id")
     category_id_raw = request.form.get("edit_product_category_id")
     reorder_level_raw = request.form.get("edit_product_reorder_level", "3")
+    return_to = request.form.get("return_to", "").strip().lower()
+
+    def _redirect_after():
+        if return_to.startswith("brand:"):
+            try:
+                brand_id = int(return_to.split(":", 1)[1])
+            except (TypeError, ValueError, IndexError):
+                return _redirect_to_page("products")
+            return redirect(url_for("manager.brand_detail", brand_id=brand_id))
+        if return_to.startswith("category:"):
+            try:
+                category_id = int(return_to.split(":", 1)[1])
+            except (TypeError, ValueError, IndexError):
+                return _redirect_to_page("products")
+            return redirect(url_for("manager.category_detail", category_id=category_id))
+        return _redirect_to_page("products")
 
     try:
         product_id = int(product_id)
     except (TypeError, ValueError):
         flash("Invalid product.", "error")
-        return _redirect_to_page("products")
+        return _redirect_after()
 
     if not name:
         flash("Product name is required.", "error")
-        return _redirect_to_page("products")
+        return _redirect_after()
 
     db = get_db()
     shop = _get_manager_shop(db)
@@ -941,7 +973,7 @@ def update_product():
         brand = Brand.get_by_id(db, shop["id"], brand_id)
         if not brand:
             flash("Brand not found.", "error")
-            return _redirect_to_page("products")
+            return _redirect_after()
 
     category_id = None
     if category_id_raw:
@@ -953,12 +985,12 @@ def update_product():
         category = Category.get_by_id(db, shop["id"], category_id)
         if not category:
             flash("Category not found.", "error")
-            return _redirect_to_page("products")
+            return _redirect_after()
 
     product = Product.get_for_shop(db, shop["id"], product_id)
     if not product:
         flash("Product not found.", "error")
-        return _redirect_to_page("products")
+        return _redirect_after()
 
     try:
         reorder_level = int(reorder_level_raw)
@@ -966,7 +998,7 @@ def update_product():
             raise ValueError
     except (TypeError, ValueError):
         flash("Enter a valid minimum stock level (0 or above).", "error")
-        return _redirect_to_page("products")
+        return _redirect_after()
 
     current_price = product["price"]
 
@@ -987,7 +1019,7 @@ def update_product():
         db.rollback()
         flash("SKU already exists.", "error")
 
-    return _redirect_to_page("products")
+    return _redirect_after()
 
 
 @manager_bp.route("/products/delete", methods=["POST"])

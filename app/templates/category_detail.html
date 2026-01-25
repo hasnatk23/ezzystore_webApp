@@ -152,6 +152,7 @@
         <button class="icon-btn" type="button" data-modal-close>&times;</button>
       </div>
       <form class="modal-body" method="post" action="{{ url_for('manager.create_product') }}">
+        <input type="hidden" name="return_to" value="category:{{ category.id }}">
         <input type="hidden" name="product_category_id" value="{{ category.id }}">
         <label class="field">
           <span>Name</span>
@@ -189,6 +190,7 @@
       </div>
       <form class="modal-body" method="post" action="{{ url_for('manager.update_product') }}" id="editProductForm">
         <input type="hidden" name="edit_product_id" id="editProductId">
+        <input type="hidden" name="return_to" value="category:{{ category.id }}">
         <label class="field">
           <span>Name</span>
           <input name="edit_product_name" id="editProductName" required>
