@@ -1055,6 +1055,37 @@ body{
   background:linear-gradient(135deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
   box-shadow:0 14px 32px rgba(6,10,24,.28);
 }
+.table-shell-compact{
+  max-height:360px;
+  overflow:auto;
+}
+.table-shell-compact{
+  overflow-x:hidden;
+}
+.restock-pick-table{
+  table-layout:fixed;
+}
+.restock-pick-table th:first-child,
+.restock-pick-table td:first-child{
+  width:48px;
+  text-align:center;
+}
+.restock-pick-table th:nth-child(2),
+.restock-pick-table td:nth-child(2){
+  width:60%;
+}
+.restock-pick-table th:nth-child(3),
+.restock-pick-table td:nth-child(3){
+  width:40%;
+}
+.restock-pick-table td{
+  white-space:normal;
+}
+.restock-pick-table input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  accent-color:var(--accent);
+}
 .table-pagination{
   margin-top:14px;
   display:flex;
@@ -1097,6 +1128,13 @@ body{
   border-collapse:collapse;
   background:transparent;
 }
+.table.fixed{
+  table-layout:fixed;
+}
+.table th,
+.table td{
+  word-break:break-word;
+}
 .table th,
 .table td{
   text-align:left;
@@ -1115,8 +1153,48 @@ body{
 .table tbody tr:hover{
   background:rgba(14,165,233,.08);
 }
-.product-table th.table-actions,
-.product-table td.table-actions{
+.brand-row{
+  cursor:pointer;
+}
+.brand-row:focus-visible{
+  outline:2px solid rgba(14,165,233,.6);
+  outline-offset:-2px;
+}
+.brand-table{
+  table-layout:fixed;
+}
+.brand-table th:nth-child(1),
+.brand-table td:nth-child(1){
+  width:70px;
+}
+.brand-table th:nth-child(3),
+.brand-table td:nth-child(3){
+  width:120px;
+}
+.brand-table th:nth-child(4),
+.brand-table td:nth-child(4){
+  width:220px;
+}
+.brand-table td:nth-child(2){
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.brand-table .row-actions{
+  justify-content:flex-end;
+}
+@media (max-width:900px){
+  .brand-table th:nth-child(3),
+  .brand-table td:nth-child(3){
+    display:none;
+  }
+  .brand-table th:nth-child(4),
+  .brand-table td:nth-child(4){
+    width:auto;
+  }
+}
+.table th.table-actions,
+.table td.table-actions{
   text-align:right;
   white-space:nowrap;
 }
@@ -1332,6 +1410,27 @@ body{
   border:1px solid var(--border);
   box-shadow:var(--shadow);
   overflow:hidden;
+}
+.modal-wide{
+  width:min(980px,96%);
+}
+.modal{
+  display:flex;
+  flex-direction:column;
+  max-height:90vh;
+}
+.modal-body-scroll{
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.modal-body-scroll .modal-actions{
+  margin-top:auto;
+  padding-top:6px;
+  position:sticky;
+  bottom:0;
+  background:var(--card);
 }
 .modal-head{
   display:flex;

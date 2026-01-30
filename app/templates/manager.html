@@ -1466,40 +1466,36 @@
 
       {% if brands %}
 
-        <div class="category-card-grid brand-card-grid">
-
-          {% for brand in brands %}
-
-            <article class="category-card-link brand-card" data-brand-name="{{ brand.name | lower }}" data-brand-url="{{ url_for('manager.brand_detail', brand_id=brand.id) }}" tabindex="0" role="button" aria-label="Open {{ brand.name }} detail">
-
-              <div class="brand-card-head">
-
-                <div>
-
-                  <p class="category-pill-label">Brand</p>
-
-                  <h3>{{ brand.name }}</h3>
-
-                  <p class="muted">{{ brand_counts[brand.id] | default(0) }} products</p>
-
-                </div>
-
-                <span class="category-count-badge">{{ brand_counts[brand.id] | default(0) }}</span>
-
-              </div>
-
-              <div class="brand-card-foot">
-
-                <span class="muted">Click card to manage products</span>
-
-                <button type="button" class="btn btn-soft btn-mini brand-rename-btn" data-rename-brand data-brand-id="{{ brand.id }}" data-brand-name="{{ brand.name }}">Rename</button>
-
-              </div>
-
-            </article>
-
-          {% endfor %}
-
+        <div class="table-card">
+          <div class="table-shell">
+            <table class="table brand-table">
+              <thead>
+                <tr>
+                  <th>Sr.</th>
+                  <th>Brand</th>
+                  <th>Products</th>
+                  <th class="table-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for brand in brands %}
+                  <tr class="brand-row" data-brand-name="{{ brand.name | lower }}" data-brand-url="{{ url_for('manager.brand_detail', brand_id=brand.id) }}" tabindex="0" role="button" aria-label="Open {{ brand.name }} detail">
+                    <td class="product-sr-cell">{{ loop.index }}</td>
+                    <td>
+                      <strong>{{ brand.name }}</strong>
+                    </td>
+                    <td>{{ brand_counts[brand.id] | default(0) }}</td>
+                    <td class="table-actions">
+                      <div class="row-actions">
+                        <button type="button" class="btn btn-secondary btn-mini" data-open-brand>Open</button>
+                        <button type="button" class="btn btn-soft btn-mini brand-rename-btn" data-rename-brand data-brand-id="{{ brand.id }}" data-brand-name="{{ brand.name }}">Rename</button>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="empty mini category-search-empty" id="brandEmpty" hidden>
@@ -1656,46 +1652,40 @@
 
       {% if categories %}
 
-        <div class="category-card-grid" id="categoryCardGrid">
-
-          {% for category in categories %}
-
-            <article class="category-card-link category-card" data-category-name="{{ category.name | lower }}">
-
-              <div class="category-card-head">
-
-                <div>
-
-                  <h3>{{ category.name }}</h3>
-
-                  <p class="muted">{{ category_counts[category.id] | default(0) }} products</p>
-
-                </div>
-
-                <span class="category-count-badge">{{ category_counts[category.id] | default(0) }}</span>
-
-              </div>
-
-              <div class="category-card-foot">
-
-                <a class="btn btn-secondary btn-mini" href="{{ url_for('manager.category_detail', category_id=category.id) }}">
-
-                  View products
-
-                </a>
-
-                <button type="button" class="btn btn-soft btn-mini" data-rename-category data-category-id="{{ category.id }}" data-category-name="{{ category.name }}">
-
-                  Rename
-
-                </button>
-
-              </div>
-
-            </article>
-
-          {% endfor %}
-
+        <div class="table-card">
+          <div class="table-shell">
+            <table class="table category-table">
+              <thead>
+                <tr>
+                  <th>Sr.</th>
+                  <th>Category</th>
+                  <th>Products</th>
+                  <th class="table-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="categoryCardGrid">
+                {% for category in categories %}
+                  <tr class="category-card category-row" data-category-name="{{ category.name | lower }}">
+                    <td class="product-sr-cell">{{ loop.index }}</td>
+                    <td>
+                      <strong>{{ category.name }}</strong>
+                    </td>
+                    <td>{{ category_counts[category.id] | default(0) }}</td>
+                    <td class="table-actions">
+                      <div class="row-actions">
+                        <a class="btn btn-secondary btn-mini" href="{{ url_for('manager.category_detail', category_id=category.id) }}">
+                          View products
+                        </a>
+                        <button type="button" class="btn btn-soft btn-mini" data-rename-category data-category-id="{{ category.id }}" data-category-name="{{ category.name }}">
+                          Rename
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="empty mini category-search-empty" id="categoryManageEmpty" hidden>
@@ -1869,7 +1859,7 @@
 
 <div class="modal-backdrop" id="stockPickerModal">
 
-  <div class="modal">
+  <div class="modal modal-wide">
 
     <div class="modal-head">
 
@@ -1885,56 +1875,42 @@
 
     </div>
 
-    <div class="modal-body">
+    <div class="modal-body modal-body-scroll">
 
       <label class="field">
 
         <span>Search products</span>
 
-        <input type="search" id="batchProductSearch" placeholder="Type to filter products" autocomplete="off">
+        <input type="search" id="batchProductSearch" placeholder="Filter by product or category" autocomplete="off">
 
       </label>
 
-      <div class="product-checklist" id="batchProductChecklist">
-
-        {% for p in products %}
-
-          {% set latest = product_latest.get(p.id) %}
-
-          <label class="checkbox-card" data-product-name="{{ p.name | lower }}">
-
-            <input type="checkbox"
-                   value="{{ p.id }}"
-                   data-product-name="{{ p.name }}"
-                   data-purchase-rate="{{ latest.purchase_rate if latest else '' }}"
-                   data-sale-price="{{ latest.sale_price if latest else '' }}">
-
-            <div>
-
-              <span>{{ p.name }}</span>
-
-              <small>
-
-                {% if latest %}
-
-                  Last purchase PKR {{ '%.2f'|format(latest.purchase_rate) }} · Sale PKR {{ '%.2f'|format(latest.sale_price) }}
-
-                {% else %}
-
-                  {{ p.category_name or "-" }}
-
-                {% endif %}
-
-              </small>
-
-            </div>
-
-          </label>
-
-        {% endfor %}
-
-      </div>
-
+      <div class="table-shell table-shell-compact" id="batchProductChecklist">
+        <table class="table restock-pick-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Product</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+              {% set latest = product_latest.get(p.id) %}
+              <tr class="restock-pick-row" data-product-name="{{ p.name | lower }}" data-product-category="{{ (p.category_name or '-') | lower }}">
+                <td>
+                  <input type="checkbox"
+                         value="{{ p.id }}"
+                         data-product-name="{{ p.name }}"
+                         data-purchase-rate="{{ latest.purchase_rate if latest else '' }}"
+                         data-sale-price="{{ latest.sale_price if latest else '' }}">
+                </td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.category_name or "-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       <div class="modal-actions">
 
         <button class="btn btn-soft" type="button" data-stock-picker-close>Cancel</button>
@@ -2337,7 +2313,13 @@
 
 
   brandCards.forEach(card=>{
-
+    const openBtn = card.querySelector("[data-open-brand]");
+    if(openBtn){
+      openBtn.addEventListener("click", evt=>{
+        evt.stopPropagation();
+        openBrandDetail(card);
+      });
+    }
     card.addEventListener("click", ()=> openBrandDetail(card));
 
     card.addEventListener("keydown", evt=>{
@@ -3021,7 +3003,7 @@
 
   if(batchSearchInput && checklist){
 
-    const productCards = checklist.querySelectorAll(".checkbox-card");
+    const productCards = checklist.querySelectorAll(".restock-pick-row");
 
     const filterProducts = ()=>{
 
@@ -3031,7 +3013,9 @@
 
       productCards.forEach(card=>{
 
-        const match = !term || (card.dataset.productName || "").includes(term);
+        const name = card.dataset.productName || "";
+        const category = card.dataset.productCategory || "";
+        const match = !term || name.includes(term) || category.includes(term);
 
         card.classList.toggle("hidden", !match);
 
