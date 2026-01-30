@@ -57,6 +57,9 @@
 <body class="manager-body">
   <div class="report-detail-page">
     <header class="report-detail-header">
+      <div class="detail-actions">
+        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}">Back to Dashboard</a>
+      </div>
       <p class="eyebrow">Sales report</p>
       <h1>{{ shop.name }} · {{ report_date|human_date }}</h1>
       <p>Detailed breakdown for this day.</p>

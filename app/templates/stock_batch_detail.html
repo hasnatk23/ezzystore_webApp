@@ -11,6 +11,9 @@
 </head>
 <body class="category-detail-body">
   <main class="category-detail-main">
+    <div class="detail-actions">
+      <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}">Back to Dashboard</a>
+    </div>
     {% set total_items = entries|length %}
 
     <section class="category-detail-card info-card">

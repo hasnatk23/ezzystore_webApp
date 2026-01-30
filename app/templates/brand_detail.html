@@ -19,6 +19,7 @@
         <p class="muted">{{ products|length }} product{{ '' if products|length == 1 else 's' }}</p>
       </div>
       <div class="detail-actions">
+        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}">Back to Dashboard</a>
       </div>
     </header>
 

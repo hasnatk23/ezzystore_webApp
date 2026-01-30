@@ -464,6 +464,12 @@
 
     {% set uncategorized_products = products | selectattr('category_id', 'equalto', None) | list %}
 
+    {% if active_page != 'products' %}
+    <div class="back-to-dashboard">
+      <a class="btn btn-soft btn-mini" href="{{ url_for('manager.products_page') }}">Back to Dashboard</a>
+    </div>
+    {% endif %}
+
 
 
     {% if active_page == 'products' %}
@@ -1327,9 +1333,6 @@
                 <div class="report-row-main">
                   <p class="eyebrow">Date</p>
                   <h3 class="report-date">{{ summary.sale_date|human_date }}</h3>
-                  <span class="report-pill {{ 'warn' if profit_obtained < 0 else 'good' }}">
-                    {{ 'Net loss' if profit_obtained < 0 else 'Net profit' }}
-                  </span>
                 </div>
 
                 <div class="report-row-metric">

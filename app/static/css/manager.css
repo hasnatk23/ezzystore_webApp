@@ -402,6 +402,14 @@ body{
   flex-direction:column;
   gap:12px;
 }
+.back-to-dashboard{
+  display:flex;
+  justify-content:flex-start;
+  margin:6px 0 14px;
+}
+.detail-actions{
+  margin-bottom:14px;
+}
 .restock-insights{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
