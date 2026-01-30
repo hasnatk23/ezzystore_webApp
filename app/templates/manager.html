@@ -968,6 +968,13 @@
 
               </div>
 
+              <div class="selection-preview" id="batchSelectionPreview" hidden>
+                <p class="muted tiny">Selected products</p>
+                <div class="selection-chips" id="batchSelectionList"></div>
+              </div>
+
+            </div>
+
 
 
             <article class="card form-card multi-batch-card" id="multiBatchCard" hidden>
@@ -1137,7 +1144,7 @@
 
         <div class="restock-grid sale-grid">
 
-          <div class="batch-select">
+          <div class="batch-select card sale-step-card">
 
             <div class="batch-select-head">
 
@@ -1153,9 +1160,9 @@
 
             </div>
 
-            <div class="batch-select-actions">
+              <div class="batch-select-actions">
 
-              <button class="btn btn-secondary" type="button" id="openSalePicker">
+              <button class="btn btn-secondary" type="button" id="openSalePicker" data-modal-open="salePickerModal">
 
                 <span class="btn-ic">></span>
 
@@ -1163,11 +1170,16 @@
 
               </button>
 
-              <span class="selected-counter" id="saleSelectionHint">Pick at least one product to continue.</span>
+                <span class="selected-counter" id="saleSelectionHint">Pick at least one product to continue.</span>
+
+              </div>
+
+              <div class="selection-preview" id="saleSelectionPreview" hidden>
+                <p class="muted tiny">Selected products</p>
+                <div class="selection-chips" id="saleSelectionList"></div>
+              </div>
 
             </div>
-
-          </div>
 
 
 
@@ -1193,11 +1205,7 @@
 
               <input type="hidden" name="sale_type" value="sale">
 
-              <label class="field">
-
-                <span>Customer</span>
-
-                <div class="customer-picker">
+              <div class="customer-picker-field">
 
                   <input type="hidden" name="sale_customer_id" id="saleCustomerId" value="{{ selected_customer_id if selected_customer_id is defined and selected_customer_id else '' }}">
 
@@ -1211,16 +1219,21 @@
 
                   <button class="btn btn-soft btn-mini" type="button" id="clearCustomerPicker" hidden>Clear</button>
 
-                </div>
-
-              </label>
-
-              <div class="expense-helper">
-                <span class="pill ok">Expense rate: {{ '%.2f'|format(expense_percent or 0) }}%</span>
-                <span class="muted tiny">Choose “Sell with expense” per item to apply purchase + expense only.</span>
               </div>
 
-              <div id="saleEntryContainer"></div>
+              <div class="sale-items-table" id="saleEntryContainer">
+                <table class="table sale-items-table-inner">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Quantity</th>
+                      <th>Sale price (PKR)</th>
+                      <th>Expense</th>
+                    </tr>
+                  </thead>
+                  <tbody id="saleEntryBody"></tbody>
+                </table>
+              </div>
 
               <button type="submit" class="btn btn-primary">
 
@@ -1911,6 +1924,7 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
       <div class="modal-actions">
 
         <button class="btn btn-soft" type="button" data-stock-picker-close>Cancel</button>
@@ -1933,7 +1947,7 @@
 
 <div class="modal-backdrop" id="salePickerModal">
 
-  <div class="modal">
+  <div class="modal modal-wide">
 
     <div class="modal-head">
 
@@ -1949,7 +1963,7 @@
 
     </div>
 
-    <div class="modal-body">
+    <div class="modal-body modal-body-scroll">
 
       <label class="field">
 
@@ -1959,35 +1973,33 @@
 
       </label>
 
-      <div class="product-checklist" id="saleProductChecklist">
-
-        {% for p in products %}
-
-          {% set default_sale = product_sale_defaults.get(p.id) if product_sale_defaults else None %}
-          {% set latest_purchase = product_latest.get(p.id) if product_latest else None %}
-
-          <label class="checkbox-card" data-sale-product-name="{{ p.name | lower }}">
-
-            <input type="checkbox"
-
-                   value="{{ p.id }}"
-
-                   data-product-name="{{ p.name }}"
-                   data-sale-price="{{ default_sale if default_sale is not none else '%.2f'|format(p.price) }}"
-                   data-purchase-rate="{{ latest_purchase.purchase_rate if latest_purchase else '' }}">
-
-            <div>
-
-              <span>{{ p.name }}</span>
-
-              <small>{{ p.category_name or "-" }}</small>
-
-            </div>
-
-          </label>
-
-        {% endfor %}
-
+      <div class="table-shell table-shell-compact" id="saleProductChecklist">
+        <table class="table restock-pick-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Product</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products if p.quantity > 0 %}
+              {% set default_sale = product_sale_defaults.get(p.id) if product_sale_defaults else None %}
+              {% set latest_purchase = product_latest.get(p.id) if product_latest else None %}
+              <tr class="sale-pick-row" data-sale-product-name="{{ p.name | lower }}">
+                <td>
+                  <input type="checkbox"
+                         value="{{ p.id }}"
+                         data-product-name="{{ p.name }}"
+                         data-sale-price="{{ default_sale if default_sale is not none else '%.2f'|format(p.price) }}"
+                         data-purchase-rate="{{ latest_purchase.purchase_rate if latest_purchase else '' }}">
+                </td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.category_name or "-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
 
       <div class="modal-actions">
@@ -2132,6 +2144,27 @@
 </div>
 
 
+
+<script>
+  document.addEventListener("click", evt=>{
+    const trigger = evt.target.closest("[data-modal-open]");
+    if(!trigger){
+      return;
+    }
+    const targetId = trigger.getAttribute("data-modal-open");
+    if(!targetId){
+      return;
+    }
+    const modal = document.getElementById(targetId);
+    if(!modal){
+      return;
+    }
+    modal.classList.add("show");
+    if(targetId === "salePickerModal"){
+      document.getElementById("saleProductSearch")?.focus();
+    }
+  });
+</script>
 
 <script>
 
@@ -2831,6 +2864,8 @@
   const resetBatchSelection = document.getElementById("resetBatchSelection");
 
   const selectionHint = document.getElementById("batchSelectionHint");
+  const batchSelectionPreview = document.getElementById("batchSelectionPreview");
+  const batchSelectionList = document.getElementById("batchSelectionList");
 
   const defaultBatchDate = {{ today_iso|tojson }};
   const openStockPicker = document.getElementById("openStockPicker");
@@ -2854,6 +2889,44 @@
   const closeStockPickerModal = ()=>{
 
     stockPickerModal?.classList.remove("show");
+
+  };
+
+  const updateBatchSelectionPreview = ()=>{
+
+    if(!checklist || !batchSelectionPreview || !batchSelectionList){
+
+      return;
+
+    }
+
+    const checked = checklist.querySelectorAll("input[type='checkbox']:checked");
+
+    batchSelectionList.innerHTML = "";
+
+    if(!checked.length){
+
+      batchSelectionPreview.hidden = true;
+
+      return;
+
+    }
+
+    checked.forEach(input=>{
+
+      const name = input.dataset.productName || "Product";
+
+      const chip = document.createElement("span");
+
+      chip.className = "selection-chip";
+
+      chip.textContent = name;
+
+      batchSelectionList.appendChild(chip);
+
+    });
+
+    batchSelectionPreview.hidden = false;
 
   };
 
@@ -2952,6 +3025,7 @@
       selectionHint.textContent = `${checked.length} product(s) selected.`;
 
       selectionHint.classList.remove("error");
+      updateBatchSelectionPreview();
 
 
 
@@ -2992,6 +3066,7 @@
       multiBatchCard.hidden = true;
 
       batchEntryContainer.innerHTML = "";
+      updateBatchSelectionPreview();
 
       openStockPickerModal();
 
@@ -3035,15 +3110,28 @@
 
   }
 
+  checklist?.addEventListener("change", evt=>{
+
+    if(evt.target && evt.target.matches("input[type='checkbox']")){
+
+      updateBatchSelectionPreview();
+
+    }
+
+  });
+
 
 
   const saleChecklist = document.getElementById("saleProductChecklist");
   const saleSearchInput = document.getElementById("saleProductSearch");
   const prepareSaleBtn = document.getElementById("prepareSaleBtn");
   const saleEntryContainer = document.getElementById("saleEntryContainer");
+  const saleEntryBody = document.getElementById("saleEntryBody");
   const multiSaleCard = document.getElementById("multiSaleCard");
   const resetSaleSelection = document.getElementById("resetSaleSelection");
   const saleSelectionHint = document.getElementById("saleSelectionHint");
+  const saleSelectionPreview = document.getElementById("saleSelectionPreview");
+  const saleSelectionList = document.getElementById("saleSelectionList");
   const openSalePicker = document.getElementById("openSalePicker");
   const salePickerModal = document.getElementById("salePickerModal");
   const saleCustomerId = document.getElementById("saleCustomerId");
@@ -3088,9 +3176,9 @@
 
     const entries = [];
 
-    if(saleEntryContainer && saleEntryContainer.children.length){
+    if(saleEntryBody && saleEntryBody.children.length){
 
-      saleEntryContainer.querySelectorAll(".batch-entry").forEach(entry=>{
+      saleEntryBody.querySelectorAll("tr.sale-item-row").forEach(entry=>{
 
         const id = entry.querySelector("input[name='sale_product_id[]']")?.value;
 
@@ -3188,11 +3276,11 @@
 
     });
 
-    if(draft.stage === "details" && prepareSaleBtn && saleEntryContainer){
+    if(draft.stage === "details" && prepareSaleBtn && saleEntryBody){
 
       prepareSaleBtn.click();
 
-      saleEntryContainer.querySelectorAll(".batch-entry").forEach(entry=>{
+      saleEntryBody.querySelectorAll("tr.sale-item-row").forEach(entry=>{
 
         const id = entry.querySelector("input[name='sale_product_id[]']")?.value;
 
@@ -3248,6 +3336,7 @@
       saleSelectionHint.classList.remove("error");
 
     }
+    updateSaleSelectionPreview();
 
     sessionStorage.removeItem(saleDraftKey);
 
@@ -3273,64 +3362,84 @@
 
   };
 
+  const updateSaleSelectionPreview = ()=>{
+
+    if(!saleChecklist || !saleSelectionPreview || !saleSelectionList){
+
+      return;
+
+    }
+
+    const checked = saleChecklist.querySelectorAll("input[type='checkbox']:checked");
+
+    saleSelectionList.innerHTML = "";
+
+    if(!checked.length){
+
+      saleSelectionPreview.hidden = true;
+
+      return;
+
+    }
+
+    checked.forEach(input=>{
+
+      const name = input.dataset.productName || "Product";
+
+      const chip = document.createElement("span");
+
+      chip.className = "selection-chip";
+
+      chip.textContent = name;
+
+      saleSelectionList.appendChild(chip);
+
+    });
+
+    saleSelectionPreview.hidden = false;
+
+  };
+
   const buildSaleRow = (productId, productName, defaults = {})=>{
 
     const salePriceDefault = defaults.salePrice || "";
     const purchaseRate = defaults.purchaseRate || "";
 
-    const wrapper = document.createElement("div");
-
-    wrapper.className = "batch-entry";
-
+    const wrapper = document.createElement("tr");
+    wrapper.className = "sale-item-row";
     wrapper.innerHTML = `
-
-      <div class="batch-entry-head">
-
-        <strong>${productName}</strong>
-
+      <td>
+        <div class="sale-item-name">
+          <strong>${productName}</strong>
+          <span class="pill ok">Expense rate: ${expensePercent.toFixed(2)}%</span>
+        </div>
         <input type="hidden" name="sale_product_id[]" value="${productId}">
-
-      </div>
-
-      <div class="batch-entry-grid">
-
-        <label>
-
-          <span>Quantity</span>
-
-          <input type="number" name="sale_quantity[]" min="1" required placeholder="0">
-
-        </label>
-
-        <label>
-
-          <span>Sale price (PKR)</span>
-
-          <input type="number" step="0.01" min="0" name="sale_price[]" required placeholder="0.00" value="${salePriceDefault}">
-
-        </label>
-
-      </div>
-
-      <div class="batch-entry-foot">
-
+      </td>
+      <td>
+        <input type="number" name="sale_quantity[]" min="1" required placeholder="0" class="sale-input">
+      </td>
+      <td>
+        <div class="sale-price-field">
+          <input type="number" step="0.01" min="0" name="sale_price[]" required placeholder="0.00" value="${salePriceDefault}" class="sale-input sale-price-input is-masked">
+          <button type="button" class="sale-price-toggle" data-sale-price-toggle aria-label="Show sale price">
+            <span class="eye-on" aria-hidden="true"></span>
+            <span class="eye-off" aria-hidden="true"></span>
+          </button>
+        </div>
+      </td>
+      <td>
         <input type="hidden" name="sale_expense[]" value="0" data-expense-flag>
-
         <label class="expense-toggle">
-
           <input type="checkbox" data-expense-toggle>
-
-          <span>Sell with expense (no profit)</span>
-
+          <span>Sell with expense</span>
         </label>
-
-      </div>
-
+      </td>
     `;
 
     const priceInput = wrapper.querySelector("input[name='sale_price[]']");
     const expenseFlag = wrapper.querySelector("[data-expense-flag]");
     const expenseToggle = wrapper.querySelector("[data-expense-toggle]");
+    const priceToggle = wrapper.querySelector("[data-sale-price-toggle]");
 
     const applyExpenseToggle = (enabled)=>{
       if(!priceInput || !expenseFlag || !expenseToggle){
@@ -3357,6 +3466,19 @@
         expenseFlag.value = "0";
       }
     };
+
+    const setPriceMasked = (masked)=>{
+      priceInput?.classList.toggle("is-masked", masked);
+      priceToggle?.setAttribute("aria-label", masked ? "Show sale price" : "Hide sale price");
+      priceToggle?.classList.toggle("is-shown", !masked);
+    };
+
+    setPriceMasked(true);
+
+    priceToggle?.addEventListener("click", ()=>{
+      const masked = priceInput?.classList.contains("is-masked");
+      setPriceMasked(!masked);
+    });
 
     expenseToggle?.addEventListener("change", ()=>{
       applyExpenseToggle(expenseToggle.checked);
@@ -3405,8 +3527,11 @@
       saleSelectionHint.textContent = `${checked.length} product(s) selected.`;
 
       saleSelectionHint.classList.remove("error");
+      updateSaleSelectionPreview();
 
-      saleEntryContainer.innerHTML = "";
+      if(saleEntryBody){
+        saleEntryBody.innerHTML = "";
+      }
 
       checked.forEach(input=>{
 
@@ -3419,13 +3544,12 @@
 
         };
 
-        saleEntryContainer.appendChild(buildSaleRow(input.value, name, defaults));
+        saleEntryBody?.appendChild(buildSaleRow(input.value, name, defaults));
 
       });
 
       multiSaleCard.hidden = false;
-
-      multiSaleCard.scrollIntoView({behavior:"smooth"});
+      multiSaleCard.scrollIntoView({behavior:"smooth", block:"start"});
 
       closeSalePickerModal();
 
@@ -3441,7 +3565,10 @@
 
       multiSaleCard.hidden = true;
 
-      saleEntryContainer.innerHTML = "";
+      if(saleEntryBody){
+        saleEntryBody.innerHTML = "";
+      }
+      updateSaleSelectionPreview();
 
       openSalePickerModal();
 
@@ -3453,7 +3580,7 @@
 
   if(saleSearchInput && saleChecklist){
 
-    const saleCards = saleChecklist.querySelectorAll(".checkbox-card");
+    const saleCards = saleChecklist.querySelectorAll(".sale-pick-row");
 
     const filterSaleProducts = ()=>{
 
@@ -3486,6 +3613,16 @@
     saleSearchInput.addEventListener("input", filterSaleProducts);
 
   }
+
+  saleChecklist?.addEventListener("change", evt=>{
+
+    if(evt.target && evt.target.matches("input[type='checkbox']")){
+
+      updateSaleSelectionPreview();
+
+    }
+
+  });
 
   restoreSaleDraft();
 
