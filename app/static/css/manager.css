@@ -65,12 +65,38 @@ body{
   align-items:center;
   gap:14px;
 }
+.dashboard-logo{
+  width:78px;
+  height:auto;
+  max-width:100%;
+  object-fit:contain;
+}
 .dashboard-user{
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   gap:10px;
-  flex-direction:column;
-  text-align:right;
+  flex-direction:row;
+  text-align:center;
+  justify-content:center;
+  padding:10px 14px;
+  border-radius:18px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 16px 34px rgba(6,10,24,.28);
+  backdrop-filter:blur(10px);
+}
+.dashboard-user-line{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  white-space:nowrap;
+}
+.user-label{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--muted);
+  font-weight:700;
 }
 .dashboard-user .tiny-label{
   font-size:12px;

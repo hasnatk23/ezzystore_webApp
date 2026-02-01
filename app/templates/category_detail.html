@@ -19,8 +19,6 @@
       </div>
       <div class="detail-actions">
         <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}">Back to Dashboard</a>
-        <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}">Open Dashboard</a>
-        <a class="btn btn-secondary" href="{{ url_for('manager.dashboard') }}">Back to manager</a>
       </div>
     </header>
 
@@ -71,50 +69,42 @@
       </div>
 
       {% if products %}
-        <div class="category-products product-grid">
-          {% for p in products %}
-            {% set stock_state = 'ok' %}
-            {% set stock_label = 'Healthy stock' %}
-            {% if p.quantity == 0 %}
-              {% set stock_state = 'out' %}
-              {% set stock_label = 'Out of stock' %}
-            {% elif p.quantity <= 5 %}
-              {% set stock_state = 'low' %}
-              {% set stock_label = 'Low stock' %}
-            {% endif %}
-            <article class="product-card product-card-tile category-product-card"
-                     data-category-product
-                     data-product-name="{{ p.name | lower }}"
-                     data-product-brand="{{ (p.brand_name or '') | lower }}"
-                     data-product-stock="{{ stock_state }}">
-              <div class="product-card-head">
-                <div>
-                  <p class="eyebrow">Product</p>
-                  <h3>{{ p.name }}</h3>
-                  <p class="muted">{{ p.brand_name or 'No brand' }}</p>
-                </div>
-                <span class="product-stock-badge {{ stock_state }}">{{ stock_label }}</span>
-                <div class="tile-actions">
-                  <button class="icon-btn icon-edit" type="button" aria-label="Edit {{ p.name }}"
-                          data-edit-product
-                          data-product-id="{{ p.id }}"
-                          data-product-name="{{ p.name }}"
-                          data-product-brand="{{ p.brand_id or '' }}"
-                          data-product-category="{{ p.category_id or '' }}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm13.71-9.04 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z" fill="currentColor"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div class="product-tile-meta">
-                <div class="product-mini-card">
-                  <p class="mini-label">Brand</p>
-                  <p class="mini-value">{{ p.brand_name or 'No brand' }}</p>
-                </div>
-                <div class="product-mini-card">
-                  <p class="mini-label">Quantity</p>
-                  <p class="mini-value">
+        <div class="table-shell">
+          <table class="table fixed product-table category-product-table">
+            <thead>
+              <tr>
+                <th>Sr</th>
+                <th>Product</th>
+                <th>Brand</th>
+                <th>Stock</th>
+                <th class="table-actions">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in products %}
+                {% set stock_state = 'ok' %}
+                {% set stock_label = 'Healthy stock' %}
+                {% if p.quantity == 0 %}
+                  {% set stock_state = 'out' %}
+                  {% set stock_label = 'Out of stock' %}
+                {% elif p.quantity <= 5 %}
+                  {% set stock_state = 'low' %}
+                  {% set stock_label = 'Low stock' %}
+                {% endif %}
+                <tr class="category-product-row"
+                    data-category-product
+                    data-product-name="{{ p.name | lower }}"
+                    data-product-brand="{{ (p.brand_name or '') | lower }}"
+                    data-product-stock="{{ stock_state }}">
+                  <td class="product-sr-cell">{{ loop.index }}</td>
+                  <td>
+                    <div class="product-name">
+                      <span>{{ p.name }}</span>
+                      <span class="muted mini">{{ stock_label }}</span>
+                    </div>
+                  </td>
+                  <td>{{ p.brand_name or 'No brand' }}</td>
+                  <td>
                     <span class="pill
                       {% if p.quantity == 0 %}warn
                       {% elif p.quantity <= 5 %}low
@@ -122,15 +112,25 @@
                       {% endif %}">
                       {{ p.quantity }} units
                     </span>
-                  </p>
-                </div>
-                <div class="product-mini-card">
-                  <p class="mini-label">Added</p>
-                  <p class="mini-value">{{ p.created_at|human_datetime }}</p>
-                </div>
-              </div>
-            </article>
-          {% endfor %}
+                  </td>
+                  <td class="table-actions">
+                    <div class="row-actions">
+                      <button class="icon-btn icon-edit" type="button" aria-label="Edit {{ p.name }}"
+                              data-edit-product
+                              data-product-id="{{ p.id }}"
+                              data-product-name="{{ p.name }}"
+                              data-product-brand="{{ p.brand_id or '' }}"
+                              data-product-category="{{ p.category_id or '' }}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm13.71-9.04 1.83-1.83a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z" fill="currentColor"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       {% else %}
         <div class="empty mini">
@@ -269,16 +269,16 @@
     });
 
     const categoryProductSearch = document.getElementById('categoryProductSearch');
-    const categoryProductCards = document.querySelectorAll('[data-category-product]');
-    if (categoryProductSearch && categoryProductCards.length) {
+    const categoryProductRows = document.querySelectorAll('[data-category-product]');
+    if (categoryProductSearch && categoryProductRows.length) {
       const filterCategoryProducts = () => {
         const term = categoryProductSearch.value.trim().toLowerCase();
         let visible = 0;
-        categoryProductCards.forEach(card => {
-          const name = card.dataset.productName || '';
-          const brand = card.dataset.productBrand || '';
+        categoryProductRows.forEach(row => {
+          const name = row.dataset.productName || '';
+          const brand = row.dataset.productBrand || '';
           const matches = !term || name.includes(term) || brand.includes(term);
-          card.classList.toggle('hidden', !matches);
+          row.classList.toggle('hidden', !matches);
           if (matches) visible += 1;
         });
       };

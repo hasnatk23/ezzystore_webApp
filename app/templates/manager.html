@@ -161,11 +161,7 @@
 
       <div class="dashboard-brand">
 
-        <div class="logo-circle">
-
-          <img src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore logo">
-
-        </div>
+        <img class="dashboard-logo" src="{{ url_for('static', filename='img/ezzystore-logo.png') }}" alt="Ezzystore logo">
 
         <div>
 
@@ -180,13 +176,11 @@
       </div>
 
       <div class="dashboard-user">
-
-        <span class="tiny-label">Signed in</span>
-
-        <strong>{{ session.username }}</strong>
-
+        <div class="dashboard-user-line">
+          <span class="user-label">Signed in as</span>
+          <span class="user-label">{{ session.username }}</span>
+        </div>
         <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Logout</a>
-
       </div>
 
     </div>
@@ -464,11 +458,7 @@
 
     {% set uncategorized_products = products | selectattr('category_id', 'equalto', None) | list %}
 
-    {% if active_page != 'products' %}
-    <div class="back-to-dashboard">
-      <a class="btn btn-soft btn-mini" href="{{ url_for('manager.products_page') }}">Back to Dashboard</a>
-    </div>
-    {% endif %}
+    
 
 
 
