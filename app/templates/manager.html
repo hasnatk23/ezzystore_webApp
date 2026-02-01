@@ -1263,6 +1263,53 @@
     </section>
     {% endif %}
 
+    <div class="modal-backdrop" id="saleConfirmModal">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <p class="modal-title">Confirm transaction</p>
+            <p class="modal-sub">Review the details before saving.</p>
+          </div>
+          <button class="icon-btn" type="button" data-sale-confirm-close>&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="confirm-grid">
+            <div class="confirm-row">
+              <span class="confirm-label">Customer</span>
+              <span class="confirm-value" id="confirmCustomer">Walk-in customer</span>
+            </div>
+            <div class="confirm-row">
+              <span class="confirm-label">Total items</span>
+              <span class="confirm-value" id="confirmItemCount">0</span>
+            </div>
+            <div class="confirm-row">
+              <span class="confirm-label">Total amount</span>
+              <span class="confirm-value" id="confirmTotal">PKR 0.00</span>
+            </div>
+            <div class="confirm-row confirm-profit-row">
+              <span class="confirm-label">Profit</span>
+              <span class="confirm-value masked" id="confirmProfit">PKR 0.00</span>
+              <button class="icon-btn eye-toggle" type="button" id="confirmProfitToggle" aria-label="Show profit">
+                <span class="eye-on" aria-hidden="true"></span>
+                <span class="eye-off" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="confirm-items">
+            <button class="btn btn-soft btn-mini" type="button" id="confirmItemsToggle">
+              <span id="confirmItemsToggleText">Show items</span>
+            </button>
+            <div class="confirm-items-list" id="confirmItemsList" hidden></div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-soft" type="button" data-sale-confirm-close>Cancel</button>
+          <button class="btn btn-primary" type="button" id="confirmSaleSubmit">Confirm &amp; Save</button>
+        </div>
+      </div>
+    </div>
+
 
 
     {% if active_page == 'reports' %}
@@ -1818,50 +1865,6 @@
 </div>
 
 
-
-<div class="modal-backdrop" id="returnSaleModal">
-
-  <div class="modal">
-
-    <div class="modal-head">
-
-        <div>
-
-          <p class="modal-title">Return items</p>
-
-          <p class="modal-sub">Select quantities to return to stock.</p>
-
-        </div>
-
-        <button class="icon-btn" type="button" data-return-modal-close>&times;</button>
-
-      </div>
-
-      <form class="modal-body" method="post" id="returnSaleForm">
-
-        <div id="returnSaleContainer"></div>
-
-        <label class="confirm-return-checkbox">
-
-          <input type="checkbox" id="returnSaleConfirm">
-
-          <span>I confirm these items are being returned by the customer.</span>
-
-        </label>
-
-        <div class="modal-actions">
-
-          <button class="btn btn-soft" type="button" data-return-modal-close>Cancel</button>
-
-          <button class="btn btn-primary" id="confirmReturnBtn" type="submit" disabled>Submit return</button>
-
-        </div>
-
-      </form>
-
-  </div>
-
-</div>
 
 <div class="modal-backdrop" id="stockPickerModal">
 
@@ -2573,8 +2576,6 @@
   }
 
 
-  const saleReturnBase = {{ url_for('manager.sale_return', sale_id=0)|tojson }};
-
   const productCards = document.querySelectorAll("[data-product-card]");
 
   const productSearchInput = document.getElementById("productSearch");
@@ -3140,6 +3141,18 @@
   const customerCreateName = document.getElementById("customerCreateName");
   const customerCreatePhone = document.getElementById("customerCreatePhone");
   const customerCreateForm = document.getElementById("customerCreateForm");
+  const saleConfirmModal = document.getElementById("saleConfirmModal");
+  const confirmCustomer = document.getElementById("confirmCustomer");
+  const confirmItemCount = document.getElementById("confirmItemCount");
+  const confirmTotal = document.getElementById("confirmTotal");
+  const confirmProfit = document.getElementById("confirmProfit");
+  const confirmProfitToggle = document.getElementById("confirmProfitToggle");
+  const confirmItemsToggle = document.getElementById("confirmItemsToggle");
+  const confirmItemsToggleText = document.getElementById("confirmItemsToggleText");
+  const confirmItemsList = document.getElementById("confirmItemsList");
+  const confirmSaleSubmit = document.getElementById("confirmSaleSubmit");
+  const saleForm = document.getElementById("multiSaleForm");
+  let saleConfirmOpen = false;
   const saleDraftKey = "ezzystore.saleDraft";
   const expensePercent = Number({{ expense_percent|default(0)|tojson }}) || 0;
 
@@ -3400,6 +3413,7 @@
 
     const wrapper = document.createElement("tr");
     wrapper.className = "sale-item-row";
+    wrapper.dataset.purchaseRate = purchaseRate;
     wrapper.innerHTML = `
       <td>
         <div class="sale-item-name">
@@ -3606,6 +3620,148 @@
     saleSearchInput.addEventListener("input", filterSaleProducts);
 
   }
+
+  const openConfirmModal = ()=>{
+    if(!saleConfirmModal){
+      return;
+    }
+    saleConfirmModal.classList.add("show");
+    saleConfirmOpen = true;
+  };
+
+  const closeConfirmModal = ()=>{
+    saleConfirmModal?.classList.remove("show");
+    saleConfirmOpen = false;
+  };
+
+  document.querySelectorAll("[data-sale-confirm-close]").forEach(btn=>{
+    btn.addEventListener("click", closeConfirmModal);
+  });
+  saleConfirmModal?.addEventListener("click", evt=>{
+    if(evt.target === saleConfirmModal){
+      closeConfirmModal();
+    }
+  });
+
+  const formatMoney = (value)=>{
+    if(!Number.isFinite(value)){
+      return "PKR 0.00";
+    }
+    return `PKR ${value.toFixed(2)}`;
+  };
+
+  const buildConfirmItems = (items)=>{
+    if(!confirmItemsList || !confirmItemsToggleText){
+      return;
+    }
+    confirmItemsList.innerHTML = "";
+    items.forEach(item=>{
+      const row = document.createElement("div");
+      row.className = "confirm-item-row";
+      row.innerHTML = `
+        <span class="confirm-item-name">${item.name}</span>
+        <span class="confirm-item-qty">x${item.qty}</span>
+      `;
+      confirmItemsList.appendChild(row);
+    });
+    if(items.length){
+      confirmItemsToggleText.textContent = `Show items (${items.length})`;
+    }else{
+      confirmItemsToggleText.textContent = "Show items";
+    }
+  };
+
+  confirmItemsToggle?.addEventListener("click", ()=>{
+    if(!confirmItemsList || !confirmItemsToggleText){
+      return;
+    }
+    const isHidden = confirmItemsList.hasAttribute("hidden");
+    if(isHidden){
+      confirmItemsList.removeAttribute("hidden");
+      confirmItemsToggleText.textContent = "Hide items";
+    }else{
+      confirmItemsList.setAttribute("hidden", "");
+      const count = confirmItemsList.children.length;
+      confirmItemsToggleText.textContent = count ? `Show items (${count})` : "Show items";
+    }
+  });
+
+  confirmProfitToggle?.addEventListener("click", ()=>{
+    if(!confirmProfit){
+      return;
+    }
+    const masked = confirmProfit.classList.contains("masked");
+    confirmProfit.classList.toggle("masked", !masked);
+    confirmProfitToggle?.classList.toggle("is-shown", masked);
+    confirmProfitToggle?.setAttribute("aria-label", masked ? "Hide profit" : "Show profit");
+  });
+
+  const getConfirmData = ()=>{
+    const rows = saleEntryBody?.querySelectorAll("tr.sale-item-row") || [];
+    const items = [];
+    let totalQty = 0;
+    let totalAmount = 0;
+    let totalProfit = 0;
+    let profitValid = true;
+    rows.forEach(row=>{
+      const name = row.querySelector(".sale-item-name strong")?.textContent?.trim() || "Product";
+      const qtyRaw = row.querySelector("input[name='sale_quantity[]']")?.value || "0";
+      const priceRaw = row.querySelector("input[name='sale_price[]']")?.value || "0";
+      const qty = Number(qtyRaw);
+      const price = Number(priceRaw);
+      const purchaseRate = Number(row.dataset.purchaseRate);
+      if(Number.isFinite(qty) && qty > 0){
+        totalQty += qty;
+        if(Number.isFinite(price)){
+          totalAmount += qty * price;
+        }
+        if(Number.isFinite(purchaseRate)){
+          totalProfit += qty * (price - purchaseRate);
+        }else{
+          profitValid = false;
+        }
+        items.push({ name, qty });
+      }
+    });
+    return { items, totalQty, totalAmount, totalProfit, profitValid };
+  };
+
+  const setConfirmData = ()=>{
+    const customerText = saleCustomerLabel?.textContent?.trim() || "Walk-in customer";
+    confirmCustomer.textContent = customerText === "Select customer" ? "Walk-in customer" : customerText;
+    const data = getConfirmData();
+    confirmItemCount.textContent = `${data.totalQty}`;
+    confirmTotal.textContent = formatMoney(data.totalAmount);
+    if(data.profitValid){
+      confirmProfit.textContent = formatMoney(data.totalProfit);
+    }else{
+      confirmProfit.textContent = "N/A";
+    }
+    confirmProfit.classList.add("masked");
+    confirmProfitToggle?.classList.remove("is-shown");
+    confirmProfitToggle?.setAttribute("aria-label", "Show profit");
+    buildConfirmItems(data.items);
+    if(confirmItemsList){
+      confirmItemsList.setAttribute("hidden", "");
+    }
+  };
+
+  saleForm?.addEventListener("submit", evt=>{
+    if(saleConfirmOpen){
+      return;
+    }
+    evt.preventDefault();
+    setConfirmData();
+    openConfirmModal();
+  });
+
+  confirmSaleSubmit?.addEventListener("click", ()=>{
+    if(!saleForm){
+      return;
+    }
+    confirmSaleSubmit.disabled = true;
+    saleForm.submit();
+  });
 
   saleChecklist?.addEventListener("change", evt=>{
 
@@ -3875,235 +4031,6 @@
   updateCustomerDisplay(saleCustomerId?.value || "");
 
 
-
-  const returnSaleModal = document.getElementById("returnSaleModal");
-
-  const returnSaleForm = document.getElementById("returnSaleForm");
-
-  const returnSaleContainer = document.getElementById("returnSaleContainer");
-
-  const returnSaleConfirm = document.getElementById("returnSaleConfirm");
-
-  const confirmReturnBtn = document.getElementById("confirmReturnBtn");
-
-  const normalizeReturnItems = (items = [])=>{
-    return items
-      .map(item=>{
-        const soldQty = Number(item.quantity) || 0;
-        const remaining = Math.min(
-          soldQty,
-          Math.max(Number(item.remaining_quantity ?? soldQty) || 0, 0)
-        );
-        return { ...item, __soldQty: soldQty, __remainingQty: remaining };
-      })
-      .filter(entry=> entry.__remainingQty > 0);
-  };
-
-  const refreshReturnButtonState = ()=>{
-
-    if(!confirmReturnBtn){
-
-      return;
-
-    }
-
-    const selected = returnSaleContainer?.querySelector(".return-item-toggle:checked");
-
-    confirmReturnBtn.disabled = !(returnSaleConfirm?.checked && selected);
-
-  };
-
-
-
-  const openReturnModal = (saleId, saleItemsData, { autoSelect = false } = {})=>{
-
-    if(!returnSaleModal || !returnSaleForm || !returnSaleContainer || !returnSaleConfirm || !confirmReturnBtn){
-
-      return;
-
-    }
-
-    if(!saleId || !saleItemsData.length){
-
-      return;
-
-    }
-
-    const eligibleItems = normalizeReturnItems(saleItemsData);
-
-    if(!eligibleItems.length){
-
-      alert("All items from this sale have already been returned.");
-
-      return;
-
-    }
-
-    returnSaleForm.action = saleReturnBase.replace("/0/return", `/${saleId}/return`);
-
-    returnSaleContainer.innerHTML = "";
-
-    eligibleItems.forEach(item=>{
-
-      const entryId = `return-item-${item.id}`;
-
-      const soldQty = item.__soldQty;
-
-      const remainingQty = item.__remainingQty;
-
-      const qtyLabel = remainingQty === soldQty
-        ? `Return quantity (max ${soldQty})`
-        : `Return quantity (left ${remainingQty} of ${soldQty})`;
-
-      const wrapper = document.createElement("div");
-
-      wrapper.className = "batch-entry";
-
-      wrapper.innerHTML = `
-
-        <div class="batch-entry-head">
-
-          <label class="return-select">
-
-            <input type="checkbox" class="return-item-toggle" data-entry="${entryId}">
-
-            <span>${item.product_name}</span>
-
-          </label>
-
-          <input type="hidden" name="return_sale_item_id[]" value="${item.id}" data-return-field="${entryId}" disabled>
-
-          <input type="hidden" name="return_price[]" value="${item.unit_price}" data-return-field="${entryId}" disabled>
-
-        </div>
-
-        <div class="batch-entry-grid">
-
-          <label>
-
-            <span>${qtyLabel}</span>
-
-            <input type="number" name="return_quantity[]" min="1" max="${remainingQty}" value="${remainingQty}" required data-return-field="${entryId}" disabled>
-
-          </label>
-
-          <label>
-
-            <span>Unit price (PKR)</span>
-
-            <input type="number" value="${item.unit_price}" readonly>
-
-          </label>
-
-        </div>
-
-      `;
-
-      returnSaleContainer.appendChild(wrapper);
-
-      const toggle = wrapper.querySelector(".return-item-toggle");
-
-      const toggleFields = checked=>{
-
-        wrapper.querySelectorAll(`[data-return-field="${entryId}"]`).forEach(input=>{
-
-          input.disabled = !checked;
-
-        });
-
-      };
-
-      toggle?.addEventListener("change", ()=>{
-
-        toggleFields(toggle.checked);
-
-        refreshReturnButtonState();
-
-      });
-
-      const initialState = autoSelect;
-
-      toggle.checked = initialState;
-
-      toggleFields(initialState);
-
-    });
-
-    returnSaleConfirm.checked = false;
-
-    refreshReturnButtonState();
-
-    returnSaleModal.classList.add("show");
-
-  };
-
-
-
-  document.querySelectorAll("[data-return-sale]").forEach(btn=>{
-
-    btn.addEventListener("click", ()=>{
-
-      const saleId = btn.dataset.saleId;
-
-      const saleItemsData = btn.dataset.saleItems ? JSON.parse(btn.dataset.saleItems) : [];
-
-      openReturnModal(saleId, saleItemsData, { autoSelect: false });
-
-    });
-
-  });
-
-
-
-  document.querySelectorAll("[data-return-sale-item]").forEach(btn=>{
-
-    btn.addEventListener("click", ()=>{
-
-      const saleId = btn.dataset.saleId;
-
-      const itemData = btn.dataset.saleItem ? JSON.parse(btn.dataset.saleItem) : null;
-
-      if(!itemData){
-
-        return;
-
-      }
-
-      openReturnModal(saleId, [itemData], { autoSelect: true });
-
-    });
-
-  });
-
-  returnSaleConfirm?.addEventListener("change", ()=>{
-
-    refreshReturnButtonState();
-
-  });
-
-
-
-  document.querySelectorAll("[data-return-modal-close]").forEach(btn=>{
-
-    btn.addEventListener("click", ()=>{
-
-      returnSaleModal?.classList.remove("show");
-
-    });
-
-  });
-
-
-
-  returnSaleModal?.addEventListener("click", evt=>{
-
-    if(evt.target === returnSaleModal){
-
-      returnSaleModal.classList.remove("show");
-
-    }
-
-  });
 
 </script>
 

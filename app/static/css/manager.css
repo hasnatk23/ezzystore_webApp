@@ -1625,20 +1625,19 @@ body{
   display:flex;
 }
 .modal{
-  width:min(480px,100%);
+  width:96vw;
+  height:92vh;
   background:var(--card);
   border-radius:20px;
   border:1px solid var(--border);
   box-shadow:var(--shadow);
   overflow:hidden;
-}
-.modal-wide{
-  width:min(760px,96%);
-}
-.modal{
   display:flex;
   flex-direction:column;
-  max-height:90vh;
+  max-height:92vh;
+}
+.modal-wide{
+  width:96vw;
 }
 .modal-body-scroll{
   overflow:auto;
@@ -1677,6 +1676,7 @@ body{
   background:rgba(15,23,42,.05);
   font-weight:900;
   cursor:pointer;
+  color:#fff;
 }
 .modal-body{
   padding:20px;
@@ -1749,6 +1749,107 @@ body{
   justify-content:flex-end;
   gap:10px;
   flex-wrap:wrap;
+  padding-bottom:8px;
+  padding-left:6px;
+  padding-right:6px;
+}
+.confirm-grid{
+  display:grid;
+  gap:10px;
+}
+.confirm-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+}
+.confirm-label{
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+}
+.confirm-value{
+  font-weight:800;
+}
+.confirm-profit-row{
+  position:relative;
+}
+.confirm-profit-row .confirm-value{
+  margin-left:auto;
+}
+.confirm-value.masked{
+  color:transparent;
+  text-shadow:0 0 10px rgba(226,232,240,.7);
+}
+.eye-toggle{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.08);
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+}
+.eye-toggle .eye-on,
+.eye-toggle .eye-off{
+  width:16px;
+  height:16px;
+  display:block;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+}
+.eye-toggle .eye-on{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e2e8f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z'/><circle cx='12' cy='12' r='3'/></svg>");
+}
+.eye-toggle .eye-off{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e2e8f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 3l18 18'/><path d='M10.58 10.58A2 2 0 0 0 12 14a2 2 0 0 0 1.42-.58'/><path d='M9.9 4.24A10.94 10.94 0 0 1 12 4c6.5 0 10 8 10 8a18.6 18.6 0 0 1-3.16 4.36'/><path d='M6.1 6.1A18.3 18.3 0 0 0 2 12s3.5 7 10 7a10.94 10.94 0 0 0 4.2-.84'/></svg>");
+}
+.eye-toggle .eye-off{
+  display:none;
+}
+.eye-toggle.is-shown .eye-on{
+  display:none;
+}
+.eye-toggle.is-shown .eye-off{
+  display:block;
+}
+.confirm-items{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.confirm-items-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px dashed rgba(255,255,255,.12);
+  background:rgba(255,255,255,.03);
+  max-height:180px;
+  overflow:auto;
+}
+.confirm-item-row{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:13px;
+}
+.confirm-item-name{
+  font-weight:700;
+}
+.confirm-item-qty{
+  color:var(--muted);
+  font-weight:700;
 }
 .product-manage-list{
   display:flex;
@@ -2020,6 +2121,106 @@ body{
   font-size:13px;
   font-weight:700;
   color:#475569;
+}
+.sale-return-page .confirm-return-checkbox{
+  color:#ffffff;
+}
+.sale-return-page .table-shell{
+  margin-top:10px;
+}
+.sale-return-page .sale-return-table{
+  table-layout:fixed;
+  width:100%;
+}
+.sale-return-page .sale-return-table th,
+.sale-return-page .sale-return-table td{
+  padding:6px 8px;
+  vertical-align:top;
+}
+.sale-return-page .sale-return-table th:nth-child(1),
+.sale-return-page .sale-return-table td:nth-child(1){
+  width:52px;
+}
+.sale-return-page .sale-return-table th:nth-child(2),
+.sale-return-page .sale-return-table td:nth-child(2){
+  width:auto;
+}
+.sale-return-page .sale-return-table th:nth-child(3),
+.sale-return-page .sale-return-table td:nth-child(3){
+  width:92px;
+}
+.sale-return-page .sale-return-table th:nth-child(4),
+.sale-return-page .sale-return-table td:nth-child(4){
+  width:120px;
+}
+.sale-return-page .sale-return-table th:nth-child(5),
+.sale-return-page .sale-return-table td:nth-child(5){
+  width:88px;
+}
+.sale-return-page .sale-return-table th{
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  font-size:11px;
+  color:#9aa8c1;
+  white-space:nowrap;
+}
+.sale-return-page .sale-return-table th:nth-child(1),
+.sale-return-page .sale-return-table td:nth-child(1),
+.sale-return-page .sale-return-table th:nth-child(5),
+.sale-return-page .sale-return-table td:nth-child(5){
+  text-align:center;
+}
+.sale-return-page .sale-return-table th:nth-child(3),
+.sale-return-page .sale-return-table td:nth-child(3),
+.sale-return-page .sale-return-table th:nth-child(4),
+.sale-return-page .sale-return-table td:nth-child(4){
+  text-align:center;
+}
+.sale-return-page .sale-return-table input[type="number"]{
+  width:8ch;
+  max-width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(15,23,42,.45);
+  color:var(--text);
+  font-size:14px;
+  text-align:center;
+  display:block;
+  margin:0 auto;
+}
+.sale-return-page .sale-return-table input[type="number"][disabled]{
+  background:rgba(148,163,184,.12);
+  border-color:rgba(148,163,184,.35);
+  color:rgba(148,163,184,.8);
+  cursor:not-allowed;
+  box-shadow:none;
+}
+.sale-return-page .sale-return-table td{
+  overflow:visible;
+}
+.sale-return-page .sale-return-item-name{
+  font-weight:700;
+  display:inline-block;
+  max-width:100%;
+  white-space:normal;
+  overflow:visible;
+}
+.sale-return-page .sale-return-qty-cell{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.sale-return-page .sale-return-qty-cell .muted{
+  font-size:11px;
+}
+.sale-return-page .sale-return-check-cell{
+  text-align:center;
+}
+.sale-return-page .sale-return-toggle{
+  width:18px;
+  height:18px;
+  accent-color:var(--accent);
 }
 .detail-fab{
   position:fixed;

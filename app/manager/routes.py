@@ -746,7 +746,7 @@ def settings_page():
     return render_template("manager.html", **ctx)
 
 
-@manager_bp.route("/sales/<int:sale_id>/return", methods=["POST"])
+@manager_bp.route("/sales/<int:sale_id>/return", methods=["GET", "POST"])
 @manager_required
 def sale_return(sale_id: int):
     db = get_db()
@@ -754,6 +754,52 @@ def sale_return(sale_id: int):
     if not shop:
         flash("No shop assigned.", "error")
         return redirect(url_for("auth.logout"))
+
+    def _safe_return_url(raw: str | None):
+        if not raw:
+            return None
+        raw = raw.strip()
+        if raw.startswith("/"):
+            return raw
+        return None
+
+    if request.method == "GET":
+        try:
+            sale_id = int(sale_id)
+        except (TypeError, ValueError):
+            flash("Invalid sale reference.", "error")
+            return _redirect_to_page("sales")
+
+        sale, sale_items = Sale.get_with_items(db, shop["id"], sale_id)
+        if not sale:
+            flash("Sale not found.", "error")
+            return _redirect_to_page("sales")
+        if sale["sale_type"] != "sale":
+            flash("Only sales can be returned.", "error")
+            return _redirect_to_page("sales")
+
+        return_items = [item for item in sale_items if item["remaining_quantity"] > 0]
+        raw_preselect = request.args.get("return_item_id")
+        preselect_item_id = None
+        if raw_preselect:
+            try:
+                candidate = int(raw_preselect)
+            except (TypeError, ValueError):
+                candidate = None
+            if candidate and any(item["id"] == candidate for item in return_items):
+                preselect_item_id = candidate
+
+        return_to = _safe_return_url(request.args.get("return_to"))
+        back_url = return_to or url_for("manager.sales_page")
+        return render_template(
+            "sale_return.html",
+            shop=shop,
+            sale=sale,
+            return_items=return_items,
+            preselect_item_id=preselect_item_id,
+            return_to=return_to,
+            back_url=back_url,
+        )
 
     try:
         sale_id = int(sale_id)
@@ -856,6 +902,9 @@ def sale_return(sale_id: int):
         db.rollback()
         flash("Failed to record return.", "error")
 
+    return_to = _safe_return_url(request.form.get("return_to"))
+    if return_to:
+        return redirect(return_to)
     return _redirect_to_page("sales")
 
 

@@ -42,15 +42,145 @@
       justify-content: space-between;
       gap: 1rem;
     }
-    .report-detail-search {
-      min-width: 260px;
+    .report-detail-filter {
+      min-width: 180px;
     }
-    .report-detail-search input {
+    .report-detail-filter select,
+    .report-detail-filter input {
       border-radius: 999px;
       border: 1px solid var(--border);
       padding: 0.55rem 0.9rem;
       background: rgba(255,255,255,0.08);
       color: var(--text);
+    }
+    .report-detail-filter select {
+      background-color: rgba(15,23,42,0.6);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .report-detail-filter select option {
+      background-color: #0f172a;
+      color: #e2e8f0;
+    }
+    .report-items-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      padding: 0.25rem 0.25rem 0.75rem;
+    }
+    .report-items-meta p {
+      margin: 0;
+    }
+    #reportItemsModal .modal {
+      width: min(1200px, 96vw);
+      height: min(92vh, 900px);
+      display: flex;
+      flex-direction: column;
+    }
+    #reportItemsModal .modal-body {
+      flex: 1;
+      overflow: hidden;
+    }
+    #reportItemsModal .table-shell {
+      height: 100%;
+      overflow: auto;
+    }
+    #reportReturnModal .modal {
+      width: min(1200px, 96vw);
+      height: min(92vh, 900px);
+      display: flex;
+      flex-direction: column;
+    }
+    #reportReturnModal .modal-body {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #reportReturnModal .table-shell {
+      flex: 1;
+      overflow: auto;
+    }
+    #reportReturnModal .sale-return-table{
+      table-layout: fixed;
+      width: 100%;
+    }
+    #reportReturnModal .sale-return-table th,
+    #reportReturnModal .sale-return-table td{
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+    #reportReturnModal .sale-return-table th:nth-child(1),
+    #reportReturnModal .sale-return-table td:nth-child(1){
+      width: 52px;
+      text-align: center;
+    }
+    #reportReturnModal .sale-return-table th:nth-child(2),
+    #reportReturnModal .sale-return-table td:nth-child(2){
+      width: auto;
+    }
+    #reportReturnModal .sale-return-table th:nth-child(3),
+    #reportReturnModal .sale-return-table td:nth-child(3){
+      width: 92px;
+      text-align: center;
+    }
+    #reportReturnModal .sale-return-table th:nth-child(4),
+    #reportReturnModal .sale-return-table td:nth-child(4){
+      width: 120px;
+      text-align: center;
+    }
+    #reportReturnModal .sale-return-table th:nth-child(5),
+    #reportReturnModal .sale-return-table td:nth-child(5){
+      width: 88px;
+      text-align: center;
+    }
+    #reportReturnModal .sale-return-table th{
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-size: 11px;
+      color: #9aa8c1;
+      white-space: nowrap;
+    }
+    #reportReturnModal .sale-return-item-name{
+      font-weight: 700;
+      display: inline-block;
+      max-width: 100%;
+      white-space: normal;
+      overflow: visible;
+    }
+    #reportReturnModal .sale-return-qty-cell{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #reportReturnModal .sale-return-qty-cell input[type="number"]{
+      width: 8ch;
+      max-width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,.45);
+      color: var(--text);
+      font-size: 14px;
+      text-align: center;
+      display: block;
+      margin: 0 auto;
+    }
+    #reportReturnModal .sale-return-qty-cell input[type="number"][disabled]{
+      background: rgba(148,163,184,.12);
+      border-color: rgba(148,163,184,.35);
+      color: rgba(148,163,184,.8);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #reportReturnModal .sale-return-confirm{
+      color: #fff;
+    }
+    #reportReturnModal .sale-return-confirm input[type="checkbox"]{
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
     }
   </style>
 </head>
@@ -61,7 +191,7 @@
         <a class="btn btn-soft" href="{{ url_for('manager.dashboard') }}">Back to Dashboard</a>
       </div>
       <p class="eyebrow">Sales report</p>
-      <h1>{{ shop.name }} · {{ report_date|human_date }}</h1>
+      <h1>{{ shop.name }}</h1>
       <p>Detailed breakdown for this day.</p>
     </header>
 
@@ -95,9 +225,17 @@
           <h2>Transactions</h2>
           <p class="muted">Detailed list for {{ report_date|human_date }}.</p>
         </div>
-        <label class="field report-detail-search">
-          <span>Search entries</span>
-          <input type="search" id="reportDetailSearch" placeholder="Search by customer, product, or time" autocomplete="off">
+        <label class="field report-detail-filter">
+          <span>Type</span>
+          <select id="reportDetailType">
+            <option value="all">All</option>
+            <option value="sale">Sales</option>
+            <option value="return">Returns</option>
+          </select>
+        </label>
+        <label class="field report-detail-filter">
+          <span>Customer</span>
+          <input type="search" id="reportDetailCustomer" placeholder="Filter by customer name" autocomplete="off">
         </label>
       </div>
       {% if report_sales %}
@@ -118,6 +256,7 @@
               {% for block in report_sales %}
                 {% set product_names = block.sale_items | map(attribute='product_name') | list %}
                 <tr class="report-detail-row"
+                    data-type="{{ block.sale.sale_type }}"
                     data-customer="{{ (block.sale.customer_name or 'Walk-in customer')|lower }}"
                     data-time="{{ block.sale.created_at|human_time|lower }}"
                     data-products="{{ product_names|join(' ')|lower }}">
@@ -127,52 +266,40 @@
                   <td>PKR {{ '%.2f'|format(block.sale.total_amount) }}</td>
                   <td>{{ block.sale.created_at|human_datetime }}</td>
                   <td>
-                    <ul class="purchase-preview-list">
-                      {% for item in block.sale_items %}
-                        <li>
-                          <span class="purchase-index">{{ loop.index }}.</span>
-                          <div class="purchase-date">
-                            <strong class="purchase-product">{{ item.product_name }}</strong>
-                            {% set returned_qty = item.returned_quantity or 0 %}
-                            {% set remaining_qty = item.remaining_quantity or (item.quantity - returned_qty) %}
-                            <small class="muted">
-                              Qty {{ item.quantity }}
-                              {% if returned_qty %}
-                                · Returned {{ returned_qty }}
-                              {% endif %}
-                            </small>
-                          </div>
-                          <strong>{{ item.quantity }} @ PKR {{ '%.2f'|format(item.unit_price) }}</strong>
-                          {% if block.sale.sale_type == "sale" %}
-                            {% if remaining_qty > 0 %}
-                            <button class="btn btn-soft btn-mini return-inline-btn" type="button"
-                                    data-return-sale-item
-                                    data-sale-id="{{ block.sale.id }}"
-                                    data-sale-item='{{ item|tojson|e }}'>
-                              Return
-                            </button>
-                              {% if returned_qty %}
-                                <span class="muted tiny">Pending {{ remaining_qty }} left</span>
-                              {% endif %}
-                            {% else %}
-                              <span class="muted tiny">Returned {{ item.returned_at|human_datetime }}</span>
-                            {% endif %}
-                          {% endif %}
-                        </li>
-                      {% endfor %}
-                    </ul>
+                    {% if block.sale.sale_type == "sale" %}
+                      <button class="btn btn-soft btn-mini view-items-btn"
+                              type="button"
+                              data-sale-id="{{ block.sale.id }}"
+                              data-sale-type="{{ block.sale.sale_type }}"
+                              data-customer="{{ block.sale.customer_name or 'Walk-in customer' }}"
+                              data-phone="{{ block.sale.customer_phone or '' }}"
+                              data-total="{{ '%.2f'|format(block.sale.total_amount) }}"
+                              data-when="{{ block.sale.created_at|human_datetime }}"
+                              data-items='{{ block.sale_items|tojson|e }}'>
+                        View items
+                      </button>
+                    {% else %}
+                      {% if block.sale.reference_created_at %}
+                        <button class="btn btn-soft btn-mini info-return-btn" type="button"
+                                data-sale-id="{{ block.sale.id }}"
+                                data-customer="{{ block.sale.customer_name or 'Walk-in customer' }}"
+                                data-phone="{{ block.sale.customer_phone or '' }}"
+                                data-total="{{ '%.2f'|format(block.sale.total_amount) }}"
+                                data-when="{{ block.sale.created_at|human_datetime }}"
+                                data-purchased="{{ block.sale.reference_created_at|human_datetime }}"
+                                data-items='{{ block.sale_items|tojson|e }}'>
+                          Return Info
+                        </button>
+                      {% else %}
+                        <span class="muted tiny">Return recorded</span>
+                      {% endif %}
+                    {% endif %}
                   </td>
                   <td>
                     {% if block.sale.sale_type == "sale" %}
                       <span class="muted tiny">Line actions</span>
                     {% else %}
                       <span class="muted tiny">Return recorded</span>
-                      {% if block.sale.reference_created_at %}
-                        <button class="btn btn-soft btn-mini info-return-btn" type="button"
-                                data-return-info="Purchased: {{ block.sale.reference_created_at|human_datetime }}&#10;Returned: {{ block.sale.created_at|human_datetime }}">
-                          Info
-                        </button>
-                      {% endif %}
                     {% endif %}
                   </td>
                 </tr>
@@ -198,47 +325,149 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="returnSaleModal">
+  <div class="modal-backdrop" id="reportItemsModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <p class="modal-title" id="reportItemsTitle">Transaction items</p>
+          <p class="modal-sub" id="reportItemsSub">Review items and return availability.</p>
+        </div>
+        <button class="icon-btn" type="button" data-report-items-close>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="report-items-meta">
+          <div>
+            <p class="muted tiny">Customer</p>
+            <p class="report-items-customer" id="reportItemsCustomer"></p>
+          </div>
+          <div>
+            <p class="muted tiny">When</p>
+            <p class="report-items-when" id="reportItemsWhen"></p>
+          </div>
+          <div>
+            <p class="muted tiny">Purchased</p>
+            <p class="report-items-when" id="reportItemsPurchased"></p>
+          </div>
+          <div>
+            <p class="muted tiny">Total</p>
+            <p class="report-items-total" id="reportItemsTotal"></p>
+          </div>
+        </div>
+        <div class="table-shell">
+          <table class="table" id="reportItemsTable">
+            <thead>
+              <tr>
+                <th>Sr.</th>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="reportItemsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="reportReturnModal">
     <div class="modal">
       <div class="modal-head">
         <div>
           <p class="modal-title">Return items</p>
           <p class="modal-sub">Select quantities to return to stock.</p>
         </div>
-        <button class="icon-btn" type="button" data-return-modal-close>&times;</button>
+        <button class="icon-btn" type="button" data-report-return-close>&times;</button>
       </div>
-      <form class="modal-body" method="post" id="returnSaleForm">
-        <div id="returnSaleContainer"></div>
-        <label class="confirm-return-checkbox">
-          <input type="checkbox" id="returnSaleConfirm">
+      <form class="modal-body" method="post" id="reportReturnForm">
+        <input type="hidden" name="return_to" value="{{ request.full_path }}">
+        <div class="report-items-meta">
+          <div>
+            <p class="muted tiny">Customer</p>
+            <p class="report-items-customer" id="reportReturnCustomer"></p>
+          </div>
+          <div>
+            <p class="muted tiny">When</p>
+            <p class="report-items-when" id="reportReturnWhen"></p>
+          </div>
+          <div>
+            <p class="muted tiny">Total</p>
+            <p class="report-items-total" id="reportReturnTotal"></p>
+          </div>
+        </div>
+        <div class="table-shell">
+          <table class="table sale-return-table">
+            <thead>
+              <tr>
+                <th>Sr.</th>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Return qty</th>
+                <th>Checkbox</th>
+              </tr>
+            </thead>
+            <tbody id="reportReturnRows"></tbody>
+          </table>
+        </div>
+
+        <label class="confirm-return-checkbox sale-return-confirm">
+          <input type="checkbox" id="reportReturnConfirm">
           <span>I confirm these items are being returned by the customer.</span>
         </label>
+
         <div class="modal-actions">
-          <button class="btn btn-soft" type="button" data-return-modal-close>Cancel</button>
-          <button class="btn btn-primary" id="confirmReturnBtn" type="submit" disabled>Submit return</button>
+          <button class="btn btn-soft" type="button" data-report-return-close>Cancel</button>
+          <button class="btn btn-primary" id="reportReturnSubmit" type="submit" disabled>Submit return</button>
         </div>
       </form>
     </div>
   </div>
 
   <script>
-    const reportDetailSearch = document.getElementById("reportDetailSearch");
+    const reportDetailType = document.getElementById("reportDetailType");
+    const reportDetailCustomer = document.getElementById("reportDetailCustomer");
     const reportDetailRows = document.querySelectorAll(".report-detail-row");
     const reportDetailEmpty = document.getElementById("reportDetailEmpty");
     const reportDetailPagination = document.getElementById("reportDetailPagination");
     const reportDetailPrevBtn = document.getElementById("reportDetailPrevBtn");
     const reportDetailNextBtn = document.getElementById("reportDetailNextBtn");
     const reportDetailPageMeta = document.getElementById("reportDetailPageMeta");
+    const reportItemsModal = document.getElementById("reportItemsModal");
+    const reportItemsBody = document.getElementById("reportItemsBody");
+    const reportItemsClose = document.querySelectorAll("[data-report-items-close]");
+    const reportItemsTitle = document.getElementById("reportItemsTitle");
+    const reportItemsSub = document.getElementById("reportItemsSub");
+    const reportItemsCustomer = document.getElementById("reportItemsCustomer");
+    const reportItemsWhen = document.getElementById("reportItemsWhen");
+    const reportItemsTotal = document.getElementById("reportItemsTotal");
+    const reportItemsPurchased = document.getElementById("reportItemsPurchased");
+    const reportReturnCustomer = document.getElementById("reportReturnCustomer");
+    const reportReturnWhen = document.getElementById("reportReturnWhen");
+    const reportReturnTotal = document.getElementById("reportReturnTotal");
+    const reportReturnModal = document.getElementById("reportReturnModal");
+    const reportReturnForm = document.getElementById("reportReturnForm");
+    const reportReturnRows = document.getElementById("reportReturnRows");
+    const reportReturnConfirm = document.getElementById("reportReturnConfirm");
+    const reportReturnSubmit = document.getElementById("reportReturnSubmit");
+    const reportReturnClose = document.querySelectorAll("[data-report-return-close]");
+    const reportReturnBase = {{ url_for('manager.sale_return', sale_id=0)|tojson }};
+    const reportReturnTo = {{ request.full_path|tojson }};
+    let currentItemsPayload = [];
+    let currentSaleId = null;
+    let currentSaleType = "sale";
     const reportDetailPageSize = 10;
     let reportDetailPage = 1;
 
     const getReportDetailMatches = ()=>{
-      const term = (reportDetailSearch?.value || "").trim().toLowerCase();
+      const typeFilter = (reportDetailType?.value || "all").toLowerCase();
+      const customerFilter = (reportDetailCustomer?.value || "").trim().toLowerCase();
       return {
-        term,
         matches: Array.from(reportDetailRows).filter(row=>{
           const haystack = `${row.dataset.customer || ""} ${row.dataset.products || ""} ${row.dataset.time || ""}`;
-          return !term || haystack.includes(term);
+          const matchesType = typeFilter === "all" || (row.dataset.type || "") === typeFilter;
+          const matchesCustomer = !customerFilter || (row.dataset.customer || "").includes(customerFilter);
+          return matchesType && matchesCustomer;
         })
       };
     };
@@ -248,7 +477,7 @@
         reportDetailEmpty?.setAttribute("hidden", "hidden");
         return;
       }
-      const { term, matches } = getReportDetailMatches();
+      const { matches } = getReportDetailMatches();
       const total = matches.length;
       const totalPages = Math.max(1, Math.ceil(total / reportDetailPageSize));
       if(reportDetailPage > totalPages){
@@ -264,7 +493,7 @@
         row.hidden = false;
       });
       if(reportDetailEmpty){
-        reportDetailEmpty.hidden = !(total === 0 && term);
+        reportDetailEmpty.hidden = total !== 0;
       }
       if(reportDetailPageMeta){
         reportDetailPageMeta.textContent = total
@@ -282,7 +511,11 @@
       }
     };
 
-    reportDetailSearch?.addEventListener("input", ()=>{
+    reportDetailType?.addEventListener("change", ()=>{
+      reportDetailPage = 1;
+      filterReportDetailRows();
+    });
+    reportDetailCustomer?.addEventListener("input", ()=>{
       reportDetailPage = 1;
       filterReportDetailRows();
     });
@@ -298,81 +531,156 @@
     });
     filterReportDetailRows();
 
-    const saleReturnBase = {{ url_for('manager.sale_return', sale_id=0)|tojson }};
-    const returnSaleModal = document.getElementById("returnSaleModal");
-    const returnSaleForm = document.getElementById("returnSaleForm");
-    const returnSaleContainer = document.getElementById("returnSaleContainer");
-    const returnSaleConfirm = document.getElementById("returnSaleConfirm");
-    const confirmReturnBtn = document.getElementById("confirmReturnBtn");
-
-    const refreshReturnButtonState = ()=>{
-      if(!confirmReturnBtn){
-        return;
+    const formatMoney = (value)=>{
+      const num = Number(value);
+      if(!Number.isFinite(num)){
+        return "PKR 0.00";
       }
-      const selected = returnSaleContainer?.querySelector(".return-item-toggle:checked");
-      confirmReturnBtn.disabled = !(returnSaleConfirm?.checked && selected);
+      return `PKR ${num.toFixed(2)}`;
     };
 
-    const normalizeRemainingItems = (items=[])=>{
+    const openItemsModal = (saleId, saleType, items, meta = {})=>{
+      if(!reportItemsModal || !reportItemsBody){
+        return;
+      }
+      if(reportItemsTitle){
+        reportItemsTitle.textContent = saleType === "return" ? "Return info" : "Transaction items";
+      }
+      if(reportItemsSub){
+        reportItemsSub.textContent = saleType === "return"
+          ? "Review returned items and original purchase details."
+          : "Review items and return availability.";
+      }
+      currentSaleId = saleId;
+      currentSaleType = saleType || "sale";
+      currentItemsPayload = items || [];
+      if(reportItemsCustomer){
+        const customer = meta.customer || "Walk-in customer";
+        const phone = meta.phone ? ` · ${meta.phone}` : "";
+        reportItemsCustomer.textContent = `${customer}${phone}`;
+      }
+      if(reportItemsWhen){
+        reportItemsWhen.textContent = meta.when || "";
+      }
+      if(reportItemsPurchased){
+        reportItemsPurchased.textContent = meta.purchased || "—";
+      }
+      if(reportItemsTotal){
+        reportItemsTotal.textContent = meta.total ? `PKR ${meta.total}` : "PKR 0.00";
+      }
+      reportItemsBody.innerHTML = "";
+      (items || []).forEach(item=>{
+        const returnedQty = Number(item.returned_quantity) || 0;
+        const totalQty = Number(item.quantity) || 0;
+        const remainingQty = Number(item.remaining_quantity ?? (totalQty - returnedQty)) || 0;
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        nameCell.textContent = item.product_name || "Item";
+
+        const qtyCell = document.createElement("td");
+        qtyCell.textContent = `${totalQty}`;
+
+        const priceCell = document.createElement("td");
+        priceCell.textContent = formatMoney(item.unit_price);
+
+        const statusCell = document.createElement("td");
+        if(saleType === "return"){
+          statusCell.textContent = meta.when ? `Returned ${meta.when}` : "Return recorded";
+        }else if(remainingQty > 0){
+          statusCell.textContent = `Remaining ${remainingQty}`;
+        }else{
+          statusCell.textContent = "Returned";
+        }
+
+        const srCell = document.createElement("td");
+        srCell.textContent = String(reportItemsBody.children.length + 1);
+
+        row.appendChild(srCell);
+        row.appendChild(nameCell);
+        row.appendChild(qtyCell);
+        row.appendChild(priceCell);
+        row.appendChild(statusCell);
+        reportItemsBody.appendChild(row);
+      });
+      reportItemsModal.classList.add("show");
+    };
+
+    const normalizeReturnItems = (items = [])=>{
       return items
         .map(item=>{
           const soldQty = Number(item.quantity) || 0;
+          const returnedQty = Number(item.returned_quantity) || 0;
           const remaining = Math.min(
             soldQty,
-            Math.max(Number(item.remaining_quantity ?? soldQty) || 0, 0)
+            Math.max(Number(item.remaining_quantity ?? (soldQty - returnedQty)) || 0, 0)
           );
           return { ...item, __soldQty: soldQty, __remainingQty: remaining };
         })
         .filter(entry=> entry.__remainingQty > 0);
     };
 
-    const openReturnModal = (saleId, saleItemsData, { autoSelect = false } = {})=>{
-      if(!returnSaleModal || !returnSaleForm || !returnSaleContainer || !returnSaleConfirm || !confirmReturnBtn){
+    const refreshReturnButtonState = ()=>{
+      if(!reportReturnSubmit){
         return;
       }
-      if(!saleId || !saleItemsData.length){
+      const selected = reportReturnRows?.querySelector(".sale-return-toggle:checked");
+      reportReturnSubmit.disabled = !(reportReturnConfirm?.checked && selected);
+    };
+
+    const openReturnModal = (saleId, items, { preselectItemId = null } = {})=>{
+      if(!reportReturnModal || !reportReturnForm || !reportReturnRows || !reportReturnConfirm || !reportReturnSubmit){
         return;
       }
-      const eligibleItems = normalizeRemainingItems(saleItemsData);
-      if(!eligibleItems.length){
+      if(!saleId){
+        return;
+      }
+      const eligible = normalizeReturnItems(items || []);
+      if(!eligible.length){
         alert("All items from this sale have already been returned.");
         return;
       }
-      returnSaleForm.action = saleReturnBase.replace("/0/return", `/${saleId}/return`);
-      returnSaleContainer.innerHTML = "";
-      eligibleItems.forEach(item=>{
-        const entryId = `return-item-${item.id}`;
-        const soldQty = item.__soldQty;
+      reportReturnForm.action = reportReturnBase.replace("/0/return", `/${saleId}/return`);
+      reportReturnRows.innerHTML = "";
+      eligible.forEach((item, idx)=>{
+        const entryId = `report-return-item-${item.id}`;
         const remainingQty = item.__remainingQty;
-        const qtyLabel = remainingQty === soldQty
-          ? `Return quantity (max ${soldQty})`
-          : `Return quantity (left ${remainingQty} of ${soldQty})`;
-        const wrapper = document.createElement("div");
-        wrapper.className = "batch-entry";
-        wrapper.innerHTML = `
-          <div class="batch-entry-head">
-            <label class="return-select">
-              <input type="checkbox" class="return-item-toggle" data-entry="${entryId}">
-              <span>${item.product_name}</span>
-            </label>
-            <input type="hidden" name="return_sale_item_id[]" value="${item.id}" data-return-field="${entryId}" disabled>
-            <input type="hidden" name="return_price[]" value="${item.unit_price}" data-return-field="${entryId}" disabled>
-          </div>
-          <div class="batch-entry-grid">
-            <label>
-              <span>${qtyLabel}</span>
-              <input type="number" name="return_quantity[]" min="1" max="${remainingQty}" value="${remainingQty}" required data-return-field="${entryId}" disabled>
-            </label>
-            <label>
-              <span>Unit price (PKR)</span>
-              <input type="number" value="${item.unit_price}" readonly>
-            </label>
-          </div>
+        const lockQty = remainingQty <= 1;
+        const row = document.createElement("tr");
+        row.className = "sale-return-row";
+        row.innerHTML = `
+          <td>${idx + 1}</td>
+          <td><span class="sale-return-item-name">${item.product_name}</span></td>
+          <td>${item.__soldQty}</td>
+          <td>
+            <div class="sale-return-qty-cell">
+              <input type="number"
+                     name="return_quantity[]"
+                     min="1"
+                     max="${remainingQty}"
+                     value="${remainingQty}"
+                     required
+                     data-sale-return-field="${entryId}"
+                     data-qty-locked="${lockQty ? 1 : 0}"
+                     ${lockQty ? "disabled" : ""}>
+            </div>
+            ${lockQty ? `<input type="hidden" name="return_quantity[]" value="${remainingQty}" data-sale-return-field="${entryId}" disabled>` : ""}
+            <input type="hidden" name="return_sale_item_id[]" value="${item.id}" data-sale-return-field="${entryId}" disabled>
+            <input type="hidden" name="return_price[]" value="${item.unit_price}" data-sale-return-field="${entryId}" disabled>
+          </td>
+          <td class="sale-return-check-cell">
+            <input type="checkbox" class="sale-return-toggle" data-entry="${entryId}">
+          </td>
         `;
-        returnSaleContainer.appendChild(wrapper);
-        const toggle = wrapper.querySelector(".return-item-toggle");
+        reportReturnRows.appendChild(row);
+        const toggle = row.querySelector(".sale-return-toggle");
         const toggleFields = checked=>{
-          wrapper.querySelectorAll(`[data-return-field="${entryId}"]`).forEach(input=>{
+          row.querySelectorAll(`[data-sale-return-field="${entryId}"]`).forEach(input=>{
+            const lockedQty = input.dataset.qtyLocked === "1";
+            if(lockedQty && input.type === "number"){
+              input.disabled = true;
+              return;
+            }
             input.disabled = !checked;
           });
         };
@@ -380,47 +688,83 @@
           toggleFields(toggle.checked);
           refreshReturnButtonState();
         });
-        toggle.checked = autoSelect;
-        toggleFields(autoSelect);
+        const autoSelect = preselectItemId && String(item.id) === String(preselectItemId);
+        if(autoSelect){
+          toggle.checked = true;
+          toggleFields(true);
+        }else{
+          toggleFields(false);
+        }
       });
-      returnSaleConfirm.checked = false;
+      reportReturnConfirm.checked = false;
       refreshReturnButtonState();
-      returnSaleModal.classList.add("show");
+      reportReturnModal.classList.add("show");
     };
 
-    document.querySelectorAll("[data-return-sale-item]").forEach(btn=>{
+    document.querySelectorAll(".view-items-btn").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         const saleId = btn.dataset.saleId;
-        const itemData = btn.dataset.saleItem ? JSON.parse(btn.dataset.saleItem) : null;
-        if(!itemData){
-          return;
+        const saleType = btn.dataset.saleType || "sale";
+        const items = btn.dataset.items ? JSON.parse(btn.dataset.items) : [];
+        const meta = {
+          customer: btn.dataset.customer,
+          phone: btn.dataset.phone,
+          total: btn.dataset.total,
+          when: btn.dataset.when,
+        };
+        if(reportReturnCustomer){
+          const customer = meta.customer || "Walk-in customer";
+          const phone = meta.phone ? ` · ${meta.phone}` : "";
+          reportReturnCustomer.textContent = `${customer}${phone}`;
         }
-        openReturnModal(saleId, [itemData], { autoSelect: true });
+        if(reportReturnWhen){
+          reportReturnWhen.textContent = meta.when || "";
+        }
+        if(reportReturnTotal){
+          reportReturnTotal.textContent = meta.total ? `PKR ${meta.total}` : "PKR 0.00";
+        }
+        openReturnModal(saleId, items);
       });
     });
 
-    returnSaleConfirm?.addEventListener("change", ()=>{
-      refreshReturnButtonState();
-    });
 
-    document.querySelectorAll("[data-return-modal-close]").forEach(btn=>{
+    reportItemsClose.forEach(btn=>{
       btn.addEventListener("click", ()=>{
-        returnSaleModal?.classList.remove("show");
+        reportItemsModal?.classList.remove("show");
       });
     });
-
-    returnSaleModal?.addEventListener("click", evt=>{
-      if(evt.target === returnSaleModal){
-        returnSaleModal.classList.remove("show");
+    reportItemsModal?.addEventListener("click", evt=>{
+      if(evt.target === reportItemsModal){
+        reportItemsModal.classList.remove("show");
       }
     });
 
+    reportReturnClose.forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        reportReturnModal?.classList.remove("show");
+      });
+    });
+    reportReturnModal?.addEventListener("click", evt=>{
+      if(evt.target === reportReturnModal){
+        reportReturnModal.classList.remove("show");
+      }
+    });
+    reportReturnConfirm?.addEventListener("change", refreshReturnButtonState);
+
     document.querySelectorAll(".info-return-btn").forEach(btn=>{
       btn.addEventListener("click", ()=>{
-        const info = btn.dataset.returnInfo || "No history available.";
-        alert(info);
+        const items = btn.dataset.items ? JSON.parse(btn.dataset.items) : [];
+        const meta = {
+          customer: btn.dataset.customer,
+          phone: btn.dataset.phone,
+          total: btn.dataset.total,
+          when: btn.dataset.when,
+          purchased: btn.dataset.purchased,
+        };
+        openItemsModal(btn.dataset.saleId || "", "return", items, meta);
       });
     });
   </script>
 </body>
 </html>
+
