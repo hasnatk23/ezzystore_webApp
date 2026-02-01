@@ -1234,6 +1234,7 @@
                 <table class="table sale-items-table-inner">
                   <thead>
                     <tr>
+                      <th>Sr.</th>
                       <th>Product</th>
                       <th>Quantity</th>
                       <th>Sale price (PKR)</th>
@@ -3399,7 +3400,7 @@
 
   };
 
-  const buildSaleRow = (productId, productName, defaults = {})=>{
+  const buildSaleRow = (productId, productName, defaults = {}, index = 1)=>{
 
     const salePriceDefault = defaults.salePrice || "";
     const purchaseRate = defaults.purchaseRate || "";
@@ -3408,10 +3409,10 @@
     wrapper.className = "sale-item-row";
     wrapper.dataset.purchaseRate = purchaseRate;
     wrapper.innerHTML = `
+      <td class="product-sr-cell">${index}</td>
       <td>
         <div class="sale-item-name">
           <strong>${productName}</strong>
-          <span class="pill ok">Expense rate: ${expensePercent.toFixed(2)}%</span>
         </div>
         <input type="hidden" name="sale_product_id[]" value="${productId}">
       </td>
@@ -3533,7 +3534,7 @@
         saleEntryBody.innerHTML = "";
       }
 
-      checked.forEach(input=>{
+      checked.forEach((input, idx)=>{
 
         const name = input.dataset.productName || "Product";
 
@@ -3544,7 +3545,7 @@
 
         };
 
-        saleEntryBody?.appendChild(buildSaleRow(input.value, name, defaults));
+        saleEntryBody?.appendChild(buildSaleRow(input.value, name, defaults, idx + 1));
 
       });
 
