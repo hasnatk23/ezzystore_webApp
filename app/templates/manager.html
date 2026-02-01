@@ -932,9 +932,9 @@
 
         {% if products %}
 
-          <div class="restock-grid">
+          <div class="restock-grid stock-grid">
 
-            <div class="batch-select">
+            <div class="batch-select card stock-step-card">
 
               <div class="batch-select-head">
 
@@ -1001,7 +1001,20 @@
 
                 </label>
 
-                <div id="batchEntryContainer"></div>
+                <div class="sale-items-table" id="batchEntryContainer">
+                  <table class="table sale-items-table-inner">
+                    <thead>
+                      <tr>
+                        <th>Sr.</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Purchase rate (PKR)</th>
+                        <th>Sale price (PKR)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="batchEntryBody"></tbody>
+                  </table>
+                </div>
 
                 <button type="submit" class="btn btn-secondary">
 
@@ -1263,7 +1276,7 @@
     </section>
     {% endif %}
 
-    <div class="modal-backdrop" id="saleConfirmModal">
+<div class="modal-backdrop" id="saleConfirmModal">
       <div class="modal">
         <div class="modal-head">
           <div>
@@ -1864,8 +1877,6 @@
 
 </div>
 
-
-
 <div class="modal-backdrop" id="stockPickerModal">
 
   <div class="modal modal-wide">
@@ -1898,7 +1909,8 @@
         <table class="table restock-pick-table">
           <thead>
             <tr>
-              <th></th>
+              <th>Sr.</th>
+              <th>Select</th>
               <th>Product</th>
               <th>Category</th>
             </tr>
@@ -1907,6 +1919,7 @@
             {% for p in products %}
               {% set latest = product_latest.get(p.id) %}
               <tr class="restock-pick-row" data-product-name="{{ p.name | lower }}" data-product-category="{{ (p.category_name or '-') | lower }}">
+                <td class="product-sr-cell">{{ loop.index }}</td>
                 <td>
                   <input type="checkbox"
                          value="{{ p.id }}"
@@ -1973,7 +1986,8 @@
         <table class="table restock-pick-table">
           <thead>
             <tr>
-              <th></th>
+              <th>Sr.</th>
+              <th>Select</th>
               <th>Product</th>
               <th>Category</th>
             </tr>
@@ -1983,6 +1997,7 @@
               {% set default_sale = product_sale_defaults.get(p.id) if product_sale_defaults else None %}
               {% set latest_purchase = product_latest.get(p.id) if product_latest else None %}
               <tr class="sale-pick-row" data-sale-product-name="{{ p.name | lower }}">
+                <td class="product-sr-cell">{{ loop.index }}</td>
                 <td>
                   <input type="checkbox"
                          value="{{ p.id }}"
@@ -2854,6 +2869,7 @@
   const multiBatchCard = document.getElementById("multiBatchCard");
 
   const batchEntryContainer = document.getElementById("batchEntryContainer");
+  const batchEntryBody = document.getElementById("batchEntryBody");
 
   const resetBatchSelection = document.getElementById("resetBatchSelection");
 
@@ -2926,57 +2942,32 @@
 
 
 
-  const buildBatchRow = (productId, productName, defaults = {})=>{
+  const buildBatchRow = (productId, productName, defaults = {}, index = 1)=>{
 
     const purchaseDefault = defaults.purchaseRate || "";
 
     const saleDefault = defaults.salePrice || "";
 
-    const wrapper = document.createElement("div");
+    const row = document.createElement("tr");
 
-    wrapper.className = "batch-entry";
-
-    wrapper.innerHTML = `
-
-      <div class="batch-entry-head">
-
+    row.innerHTML = `
+      <td class="product-sr-cell">${index}</td>
+      <td class="sale-item-name">
         <strong>${productName}</strong>
-
         <input type="hidden" name="batch_product_id[]" value="${productId}">
-
-      </div>
-
-      <div class="batch-entry-grid">
-
-        <label>
-
-          <span>Quantity</span>
-
-          <input type="number" name="batch_quantity[]" min="1" required placeholder="0">
-
-        </label>
-
-        <label>
-
-          <span>Purchase rate (PKR)</span>
-
-          <input type="number" step="0.01" min="0" name="batch_purchase_rate[]" required placeholder="0.00" value="${purchaseDefault}">
-
-        </label>
-
-        <label>
-
-          <span>Sale price (PKR)</span>
-
-          <input type="number" step="0.01" min="0" name="batch_sale_price[]" required placeholder="0.00" value="${saleDefault}">
-
-        </label>
-
-      </div>
-
+      </td>
+      <td>
+        <input class="sale-input" type="number" name="batch_quantity[]" min="1" required placeholder="0">
+      </td>
+      <td>
+        <input class="sale-input" type="number" step="0.01" min="0" name="batch_purchase_rate[]" required placeholder="0.00" value="${purchaseDefault}">
+      </td>
+      <td>
+        <input class="sale-input" type="number" step="0.01" min="0" name="batch_sale_price[]" required placeholder="0.00" value="${saleDefault}">
+      </td>
     `;
 
-    return wrapper;
+    return row;
 
   };
 
@@ -3000,7 +2991,7 @@
 
 
 
-  if(prepareBatchBtn && checklist && batchEntryContainer){
+  if(prepareBatchBtn && checklist && batchEntryContainer && batchEntryBody){
 
     prepareBatchBtn.addEventListener("click", ()=>{
 
@@ -3023,9 +3014,9 @@
 
 
 
-      batchEntryContainer.innerHTML = "";
+      batchEntryBody.innerHTML = "";
 
-      checked.forEach(input=>{
+      checked.forEach((input, idx)=>{
 
         const name = input.dataset.productName || "Product";
 
@@ -3037,7 +3028,7 @@
 
         };
 
-        batchEntryContainer.appendChild(buildBatchRow(input.value, name, defaults));
+        batchEntryBody.appendChild(buildBatchRow(input.value, name, defaults, idx + 1));
 
       });
 
@@ -3059,7 +3050,9 @@
 
       multiBatchCard.hidden = true;
 
-      batchEntryContainer.innerHTML = "";
+      if(batchEntryBody){
+        batchEntryBody.innerHTML = "";
+      }
       updateBatchSelectionPreview();
 
       openStockPickerModal();
@@ -3634,6 +3627,7 @@
     saleConfirmOpen = false;
   };
 
+
   document.querySelectorAll("[data-sale-confirm-close]").forEach(btn=>{
     btn.addEventListener("click", closeConfirmModal);
   });
@@ -3755,12 +3749,30 @@
     openConfirmModal();
   });
 
-  confirmSaleSubmit?.addEventListener("click", ()=>{
+  confirmSaleSubmit?.addEventListener("click", async ()=>{
     if(!saleForm){
       return;
     }
     confirmSaleSubmit.disabled = true;
-    saleForm.submit();
+    const formData = new FormData(saleForm);
+    try{
+      const response = await fetch(saleForm.action, {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      const payload = await response.json();
+      if(!response.ok || payload.status !== "ok"){
+        alert(payload.error || "Failed to record sale.");
+        confirmSaleSubmit.disabled = false;
+        return;
+      }
+      closeConfirmModal();
+      window.location.reload();
+    }catch(err){
+      alert("Failed to record sale.");
+      confirmSaleSubmit.disabled = false;
+    }
   });
 
   saleChecklist?.addEventListener("change", evt=>{

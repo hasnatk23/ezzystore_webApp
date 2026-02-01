@@ -248,8 +248,7 @@
                 <th>Customer</th>
                 <th>Total</th>
                 <th>When</th>
-                <th>Items</th>
-                <th>Actions</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -276,7 +275,7 @@
                               data-total="{{ '%.2f'|format(block.sale.total_amount) }}"
                               data-when="{{ block.sale.created_at|human_datetime }}"
                               data-items='{{ block.sale_items|tojson|e }}'>
-                        View items
+                        Return Item
                       </button>
                     {% else %}
                       {% if block.sale.reference_created_at %}
@@ -288,18 +287,11 @@
                                 data-when="{{ block.sale.created_at|human_datetime }}"
                                 data-purchased="{{ block.sale.reference_created_at|human_datetime }}"
                                 data-items='{{ block.sale_items|tojson|e }}'>
-                          Return Info
+                          Returned items info
                         </button>
                       {% else %}
                         <span class="muted tiny">Return recorded</span>
                       {% endif %}
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if block.sale.sale_type == "sale" %}
-                      <span class="muted tiny">Line actions</span>
-                    {% else %}
-                      <span class="muted tiny">Return recorded</span>
                     {% endif %}
                   </td>
                 </tr>
@@ -764,6 +756,7 @@
         openItemsModal(btn.dataset.saleId || "", "return", items, meta);
       });
     });
+
   </script>
 </body>
 </html>

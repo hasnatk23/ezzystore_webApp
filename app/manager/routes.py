@@ -1,7 +1,7 @@
 import sqlite3
 from functools import wraps
 from datetime import datetime, date, timedelta
-from flask import Blueprint, render_template, session, redirect, url_for, flash, request
+from flask import Blueprint, render_template, session, redirect, url_for, flash, request, jsonify
 
 from ..db import get_db
 from ..models.product import Product
@@ -593,6 +593,15 @@ def add_stock():
 @manager_bp.route("/sales/record", methods=["POST"])
 @manager_required
 def record_sale():
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or \
+        (request.accept_mimetypes and request.accept_mimetypes.best == "application/json")
+
+    def fail(message: str, code: int = 400):
+        if is_ajax:
+            return jsonify({"status": "failed", "error": message}), code
+        flash(message, "error")
+        return _redirect_to_page("sales")
+
     def parse_float(value_raw, label):
         try:
             value = float(value_raw)
@@ -600,7 +609,6 @@ def record_sale():
                 raise ValueError
             return value
         except ValueError:
-            flash(f"Enter a valid {label}.", "error")
             return None
 
     sale_type = request.form.get("sale_type", "sale")
@@ -614,11 +622,9 @@ def record_sale():
     customer_id_raw = request.form.get("sale_customer_id")
 
     if not product_ids:
-        flash("Select at least one product to record a sale or return.", "error")
-        return _redirect_to_page("sales")
+        return fail("Select at least one product to record a sale or return.")
     if not (len(product_ids) == len(quantities) == len(prices)):
-        flash("Missing sale fields for one of the products.", "error")
-        return _redirect_to_page("sales")
+        return fail("Missing sale fields for one of the products.")
 
     db = get_db()
     shop = _get_manager_shop(db)
@@ -627,8 +633,7 @@ def record_sale():
         return redirect(url_for("auth.logout"))
 
     if expense_flags and len(expense_flags) != len(product_ids):
-        flash("Missing expense selection for one of the products.", "error")
-        return _redirect_to_page("sales")
+        return fail("Missing expense selection for one of the products.")
 
     if not expense_flags:
         expense_flags = ["0"] * len(product_ids)
@@ -650,36 +655,30 @@ def record_sale():
         try:
             pid = int(product_ids[idx])
         except (TypeError, ValueError):
-            flash("Invalid product selected.", "error")
-            return _redirect_to_page("sales")
+            return fail("Invalid product selected.")
         try:
             quantity = int(quantities[idx])
         except (TypeError, ValueError):
-            flash("Enter a valid quantity.", "error")
-            return _redirect_to_page("sales")
+            return fail("Enter a valid quantity.")
         if quantity <= 0:
-            flash("Quantity must be greater than zero.", "error")
-            return _redirect_to_page("sales")
+            return fail("Quantity must be greater than zero.")
         product = Product.get_for_shop(db, shop["id"], pid)
         if not product:
-            flash("Product not found.", "error")
-            return _redirect_to_page("sales")
+            return fail("Product not found.")
         if sale_type == "sale" and product["quantity"] < quantity:
-            flash(f"Not enough stock for {product['name']}.", "error")
-            return _redirect_to_page("sales")
+            return fail(f"Not enough stock for {product['name']}.")
 
         use_expense = sale_type == "sale" and expense_flags[idx] == "1"
         if use_expense:
             latest_batch = StockBatch.latest_for_product(db, shop["id"], pid)
             if not latest_batch:
-                flash(f"Add a restock purchase price for {product['name']} before using expense pricing.", "error")
-                return _redirect_to_page("sales")
+                return fail(f"Add a restock purchase price for {product['name']} before using expense pricing.")
             purchase_rate = float(latest_batch["purchase_rate"] or 0)
             price = round(purchase_rate * (1 + (expense_percent / 100)), 2)
         else:
             price = parse_float(prices[idx], "sale price")
             if price is None:
-                return _redirect_to_page("sales")
+                return fail("Enter a valid sale price.")
 
         entries.append(
             {
@@ -693,14 +692,13 @@ def record_sale():
     if customer_id:
         customer = Customer.get_for_shop(db, shop["id"], customer_id)
         if not customer:
-            flash("Selected customer not found.", "error")
-            return _redirect_to_page("sales")
+            return fail("Selected customer not found.")
 
     try:
         for entry in entries:
             delta = -entry["quantity"] if sale_type == "sale" else entry["quantity"]
             Product.adjust_quantity(db, shop["id"], entry["product_id"], delta)
-        Sale.record(
+        sale_id = Sale.record(
             db,
             shop["id"],
             sale_type,
@@ -708,12 +706,24 @@ def record_sale():
             customer_id=customer_id,
         )
         db.commit()
+        if is_ajax:
+            return jsonify(
+                {
+                    "status": "ok",
+                    "sale_id": sale_id,
+                    "sale_type": sale_type,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "items": entries,
+                }
+            )
         if sale_type == "sale":
             flash(f"Recorded sale for {len(entries)} product(s).", "success")
         else:
             flash(f"Recorded return for {len(entries)} product(s).", "success")
     except Exception:
         db.rollback()
+        if is_ajax:
+            return jsonify({"status": "failed", "error": "Failed to record sale/return."}), 500
         flash("Failed to record sale/return.", "error")
 
     return _redirect_to_page("sales")
@@ -752,6 +762,8 @@ def sale_return(sale_id: int):
     db = get_db()
     shop = _get_manager_shop(db)
     if not shop:
+        if is_ajax:
+            return jsonify({"status": "failed", "error": "No shop assigned"}), 403
         flash("No shop assigned.", "error")
         return redirect(url_for("auth.logout"))
 
@@ -1156,6 +1168,25 @@ def stock_batch_detail(batch_date: str):
 
     total_purchase = sum(e["purchase_rate"] * e["quantity"] for e in entries)
     total_sale = sum(e["sale_price"] * e["quantity"] for e in entries)
+    restock_groups = {}
+    for entry in entries:
+        created_at = entry["created_at"] or ""
+        key = created_at[:16] if len(created_at) >= 16 else created_at
+        group = restock_groups.setdefault(
+            key,
+            {
+                "created_at": created_at,
+                "entries": [],
+                "total_items": 0,
+                "total_purchase": 0.0,
+            },
+        )
+        group["entries"].append(entry)
+        group["total_items"] += 1
+        group["total_purchase"] += entry["purchase_rate"] * entry["quantity"]
+
+    restock_runs = list(restock_groups.values())
+    restock_runs.sort(key=lambda item: item["created_at"], reverse=True)
 
     return render_template(
         "stock_batch_detail.html",
@@ -1164,6 +1195,7 @@ def stock_batch_detail(batch_date: str):
         entries=entries,
         total_purchase=total_purchase,
         total_sale=total_sale,
+        restock_runs=restock_runs,
     )
 
 
